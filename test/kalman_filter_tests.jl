@@ -35,3 +35,6 @@ for i = 1:10
     process!(kf, measurement, arc)
 end
 println(kf.estimate)
+
+
+LeastSquaresEstimator(linear_sys, linear_obs, initial_est)
