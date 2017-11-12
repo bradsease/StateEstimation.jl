@@ -1,5 +1,7 @@
-using StateEstimation
 using Base.Test
 
-# write your own tests here
-@test 1 == 2
+
+include("estimation_state_tests.jl")
+include("estimation_system_tests.jl")
+include("estimation_observer_tests.jl")
+include("kalman_filter_tests.jl")
