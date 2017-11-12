@@ -62,6 +62,19 @@ function correct!{T}(kf::DiscreteKalmanFilter{T}, z::DiscreteState{T})
     kf.estimate.P .-= Kk*kf.estimate.P*Kk'
     return nothing
 end
+function correct!{T}(kf::DiscreteKalmanFilter{T}, z::DiscreteState{T},
+                     archive::EstimatorHistory{T})
+    if kf.estimate.t != z.t
+        error("Measurement does not correspond to current discrete-time step.")
+    end
+    yk = predict(kf.obs, kf.estimate)
+    residual = (z.x - yk.x)
+    Kk = kf.estimate.P*kf.obs.H'*inv(yk.P)
+    kf.estimate.x .+= Kk*residual
+    kf.estimate.P .-= Kk*kf.estimate.P*Kk'
+    push!(archive.residuals, UncertainDiscreteState(residual, yk.P, z.t))
+    return nothing
+end
 function correct!{T}(kf::ContinuousKalmanFilter{T}, z::ContinuousState{T})
     if kf.estimate.t != z.t
         error("Measurement does not correspond to current time step.")
@@ -70,6 +83,19 @@ function correct!{T}(kf::ContinuousKalmanFilter{T}, z::ContinuousState{T})
     Kk = kf.estimate.P*kf.obs.H'*inv(yk.P)
     kf.estimate.x .+= Kk*(z.x - yk.x)
     kf.estimate.P .-= Kk*kf.estimate.P*Kk'
+    return nothing
+end
+function correct!{T}(kf::ContinuousKalmanFilter{T}, z::ContinuousState{T},
+                     archive::EstimatorHistory{T})
+    if kf.estimate.t != z.t
+        error("Measurement does not correspond to current time step.")
+    end
+    yk = predict(kf.obs, kf.estimate)
+    residual = (z.x - yk.x)
+    Kk = kf.estimate.P*kf.obs.H'*inv(yk.P)
+    kf.estimate.x .+= Kk*residual
+    kf.estimate.P .-= Kk*kf.estimate.P*Kk'
+    push!(archive.residuals, UncertainContinuousState(residual, yk.P, z.t))
     return nothing
 end
 
@@ -83,6 +109,18 @@ function process!{T}(kf::KalmanFilter{T}, z::AbstractState{T})
     correct!(kf, z)
     return nothing
 end
+function process!{T}(kf::KalmanFilter{T}, z::AbstractState{T},
+                     archive::EstimatorHistory{T})
+    if length(archive.states) == 0
+        push!(archive.states, deepcopy(kf.estimate))
+    end
+    predict!(kf, z.t)
+    correct!(kf, z, archive)
+    push!(archive.states, deepcopy(kf.estimate))
+
+    return nothing
+end
+
 
 
 """
