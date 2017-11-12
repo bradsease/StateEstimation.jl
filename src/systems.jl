@@ -35,7 +35,7 @@ end
 """
     predict(sys::LinearSystem{T}, state::AbstractState{T})
 
-Predict a discrete state through a linear system.
+Predict a state through a linear system.
 """
 function predict{T}(sys::LinearSystem{T}, state::DiscreteState{T})
     return DiscreteState(sys.A*state.x, state.t+1)
@@ -44,11 +44,19 @@ function predict{T}(sys::LinearSystem{T}, state::UncertainDiscreteState{T})
     return UncertainDiscreteState(sys.A*state.x, sys.A*state.P*sys.A'+sys.Q,
                                   state.t+1)
 end
+function predict{T}(sys::LinearSystem{T}, state::ContinuousState{T}, t::T)
+    return ContinuousState(expm(sys.A*(t-state.t))*state.x, t)
+end
+function predict{T}(sys::LinearSystem{T}, state::UncertainContinuousState{T},
+                    t::T)
+    A = expm(sys.A*(t-state.t))
+    return UncertainDiscreteState(A*state.x, A*state.P*A'+sys.Q, t)
+end
 
 """
-    predict!(sys::LinearSystem{T}, state::DiscreteState{T})
+    predict!(sys::LinearSystem{T}, state::AbstractState{T})
 
-In-place prediction of a discrete state through a linear system.
+In-place prediction of a state through a linear system.
 """
 function predict!{T}(sys::LinearSystem{T}, state::DiscreteState{T})
     state.x = sys.A*state.x
@@ -59,6 +67,19 @@ function predict!{T}(sys::LinearSystem{T}, state::UncertainDiscreteState{T})
     state.x = sys.A*state.x
     state.P = sys.A*state.P*sys.A'+sys.Q
     state.t += 1
+    return nothing
+end
+function predict!{T}(sys::LinearSystem{T}, state::ContinuousState{T}, t::T)
+    state.x = expm(sys.A*(t-state.t))*state.x
+    state.t = t
+    return nothing
+end
+function predict!{T}(sys::LinearSystem{T}, state::UncertainContinuousState{T},
+                    t::T)
+    A = expm(sys.A*(t-state.t))
+    state.x = A*state.x
+    state.P = A*state.P*A'+sys.Q
+    state.t = t
     return nothing
 end
 
