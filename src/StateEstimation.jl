@@ -7,7 +7,7 @@ export Estimator, Filter, AbstractSystem, AbstractObserver, DiscreteState,
        UncertainDiscreteState, ContinuousState, UncertainContinuousState,
        LinearSystem, predict, predict!, LinearObserver, measure, simulate,
        process!, make_absolute, make_uncertain, sample, KalmanFilter,
-       EstimatorHistory, plot_archive, LeastSquaresEstimator, add
+       EstimatorHistory, plot_archive, LeastSquaresEstimator, add!
 
 abstract type Estimator end
 abstract type Filter <: Estimator end

@@ -15,14 +15,16 @@ immutable KalmanFilter{T,S<:AbstractUncertainState{T}} <: AbstractKalmanFilter
 
     function KalmanFilter(sys::LinearSystem{T}, obs::LinearObserver{T},
                           estimate::S) where {T, S<:AbstractUncertainState{T}}
+        assert_compatibility(sys, estimate)
+        assert_compatibility(obs, estimate)
+        new{T,S}(sys, obs, estimate)
+    end
 
-         if size(sys.A, 2) != length(estimate.x)
-             error("Linear system incompatible with input state.")
-         end
-         if size(obs.H, 2) != length(estimate.x)
-             error("Linear system incompatible with input state.")
-         end
-         new{T,S}(sys, obs, estimate)
+    function KalmanFilter(sys::LinearSystem{T}, obs::LinearObserver{T},
+                          estimate::S) where {T, S<:AbstractAbsoluteState{T}}
+        assert_compatibility(sys, estimate)
+        assert_compatibility(obs, estimate)
+        KalmanFilter(sys, obs, make_uncertain(estimate))
     end
 end
 

@@ -29,6 +29,28 @@ struct LinearObserver{T<:AbstractFloat} <: AbstractObserver{T}
 end
 
 """
+    assert_compatibility(obs::LinearObserver{T}, state::AbstractState{T})
+
+Require linear observer dimensions to be compatible with input state.
+"""
+function assert_compatibility{T}(obs::LinearObserver{T},state::AbstractState{T})
+    if size(obs.H, 2) != length(state.x)
+       error("Linear observer incompatible with input state.")
+    end
+end
+"""
+    assert_compatibility(state::AbstractState{T}, obs::LinearObserver{T})
+
+Require linear observer dimensions to be left-compatible with input state.
+"""
+function assert_compatibility{T}(state::AbstractState{T},obs::LinearObserver{T})
+    if size(obs.H, 1) != length(state.x)
+       error("Linear observer incompatible with input state.")
+    end
+end
+
+
+"""
     predict(sys::LinearObserver{T}, state::AbstractState{T})
 """
 function predict{T}(sys::LinearObserver{T}, state::DiscreteState{T})

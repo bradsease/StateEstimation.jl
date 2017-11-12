@@ -31,6 +31,41 @@ struct LinearSystem{T<:AbstractFloat} <: AbstractSystem{T}
     end
 end
 
+"""
+    assert_compatibility(sys::LinearSystem{T}, state::AbstractState{T})
+
+Require linear system dimensions to be compatible with input state.
+"""
+function assert_compatibility{T}(sys::LinearSystem{T}, state::AbstractState{T})
+    if size(sys.A, 2) != length(state.x)
+       error("Linear system incompatible with input state.")
+    end
+end
+
+"""
+    state_transition_matrix(sys::LinearSystem{T}, state::AbstractState{T}, t)
+
+Get state transition matrix for a LinearSystem over a specified time
+span. Supports both discrete and continuous states in absolute and uncertain
+forms. For discrete systems, t must be an integer.
+"""
+function state_transition_matrix{T}(sys::LinearSystem{T},
+                                    state::DiscreteState{T}, t::Integer)
+    return sys.A^(t-state.t)
+end
+function state_transition_matrix{T}(sys::LinearSystem{T},
+                                    state::UncertainDiscreteState{T},t::Integer)
+    return sys.A^(t-state.t)
+end
+function state_transition_matrix{T}(sys::LinearSystem{T},
+                                    state::ContinuousState{T}, t::T)
+    return expm(sys.A*(t-state.t))
+end
+function state_transition_matrix{T}(sys::LinearSystem{T},
+                                    state::UncertainContinuousState{T}, t::T)
+    return expm(sys.A*(t-state.t))
+end
+
 
 """
     predict(sys::LinearSystem{T}, state::AbstractState{T})
@@ -52,6 +87,7 @@ function predict{T}(sys::LinearSystem{T}, state::UncertainContinuousState{T},
     A = expm(sys.A*(t-state.t))
     return UncertainContinuousState(A*state.x, A*state.P*A'+sys.Q, t)
 end
+
 
 """
     predict!(sys::LinearSystem{T}, state::AbstractState{T})
@@ -85,11 +121,10 @@ end
 
 
 
-
 """
     predict(sys::AbstractSystem{T}, state::DiscreteState{T}, t::Integer)
 
-Multi-step discrete-time prediction.
+General multi-step discrete-time prediction.
 """
 function predict{T}(sys::AbstractSystem{T}, state::DiscreteState{T}, t::Integer)
     if t < state.t

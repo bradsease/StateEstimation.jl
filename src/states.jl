@@ -131,6 +131,16 @@ make_absolute(state::UncertainContinuousState) = ContinuousState(state)
 
 
 """
+"""
+absolute_type{T}(state::UncertainDiscreteState{T}) = DiscreteState{T}
+absolute_type{T}(state::UncertainContinuousState{T}) = ContinuousState{T}
+
+"""
+"""
+uncertain_type{T}(state::DiscreteState{T}) = UncertainDiscreteState{T}
+uncertain_type{T}(state::ContinuousState{T}) = UncertainContinuousState{T}
+
+"""
     sample(state::AbstractUncertainState)
 
 Sample uncertain state. Returns absolute state of the corresponding time
