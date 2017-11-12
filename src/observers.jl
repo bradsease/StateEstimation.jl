@@ -34,8 +34,15 @@ end
 function predict{T}(sys::LinearObserver{T}, state::DiscreteState{T})
     return DiscreteState(sys.H*state.x, state.t)
 end
+function predict{T}(sys::LinearObserver{T}, state::ContinuousState{T})
+    return ContinuousState(sys.H*state.x, state.t)
+end
 function predict{T}(sys::LinearObserver{T}, state::UncertainDiscreteState{T})
     return UncertainDiscreteState(sys.H*state.x, sys.H*state.P*sys.H'+sys.R,
+                                  state.t)
+end
+function predict{T}(sys::LinearObserver{T}, state::UncertainContinuousState{T})
+    return UncertainContinuousState(sys.H*state.x, sys.H*state.P*sys.H'+sys.R,
                                   state.t)
 end
 

@@ -50,7 +50,7 @@ end
 function predict{T}(sys::LinearSystem{T}, state::UncertainContinuousState{T},
                     t::T)
     A = expm(sys.A*(t-state.t))
-    return UncertainDiscreteState(A*state.x, A*state.P*A'+sys.Q, t)
+    return UncertainContinuousState(A*state.x, A*state.P*A'+sys.Q, t)
 end
 
 """

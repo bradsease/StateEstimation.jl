@@ -62,6 +62,16 @@ function correct!{T}(kf::DiscreteKalmanFilter{T}, z::DiscreteState{T})
     kf.estimate.P .-= Kk*kf.estimate.P*Kk'
     return nothing
 end
+function correct!{T}(kf::ContinuousKalmanFilter{T}, z::ContinuousState{T})
+    if kf.estimate.t != z.t
+        error("Measurement does not correspond to current time step.")
+    end
+    yk = predict(kf.obs, kf.estimate)
+    Kk = kf.estimate.P*kf.obs.H'*inv(yk.P)
+    kf.estimate.x .+= Kk*(z.x - yk.x)
+    kf.estimate.P .-= Kk*kf.estimate.P*Kk'
+    return nothing
+end
 
 
 
@@ -75,6 +85,14 @@ function process!{T}(kf::KalmanFilter{T}, z::AbstractState{T})
 end
 
 
+"""
+    simulate(kf::KalmanFilter, t)
+
+Simulate next measurement for a Kalman filter.
+"""
+function simulate{T}(kf::KalmanFilter{T}, t)
+    return sample(predict(kf.obs, predict(kf.sys, kf.estimate, t)))
+end
 """
     simulate(kf::DiscreteKalmanFilter)
 
