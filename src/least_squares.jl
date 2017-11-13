@@ -1,14 +1,13 @@
 #
 # Least Squares Estimation
 #
-abstract type AbstractBatchEstimator <: Estimator end
 
 
 """
 Batch least squares estimator
 """
 immutable LeastSquaresEstimator{T,S<:AbstractUncertainState{T},
-                                M<:AbstractAbsoluteState{T}} <: Estimator
+                            M<:AbstractAbsoluteState{T}} <: BatchEstimator{T}
     sys::LinearSystem{T}
     obs::LinearObserver{T}
     estimate::S

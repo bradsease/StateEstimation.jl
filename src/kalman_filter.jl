@@ -2,13 +2,13 @@
 Kalman Filter Types and Methods
 """
 
-abstract type AbstractKalmanFilter <: Filter end
+abstract type AbstractKalmanFilter{T} <: SequentialEstimator{T} end
 
 
 """
 Standard Kalman Filter type
 """
-immutable KalmanFilter{T,S<:AbstractUncertainState{T}} <: AbstractKalmanFilter
+immutable KalmanFilter{T,S<:AbstractUncertainState{T}} <: AbstractKalmanFilter{T}
     sys::LinearSystem{T}
     obs::LinearObserver{T}
     estimate::S

@@ -3,23 +3,28 @@
 module StateEstimation
 
 
-export Estimator, Filter, AbstractSystem, AbstractObserver, DiscreteState,
-       UncertainDiscreteState, ContinuousState, UncertainContinuousState,
-       LinearSystem, predict, predict!, LinearObserver, measure, simulate,
-       process!, make_absolute, make_uncertain, sample, KalmanFilter,
-       EstimatorHistory, plot_archive, LeastSquaresEstimator, add!
+export Estimator, SequentialEstimator, AbstractSystem, AbstractObserver,
+       DiscreteState, UncertainDiscreteState, ContinuousState,
+       UncertainContinuousState, LinearSystem, predict, predict!,
+       LinearObserver, measure, simulate, process!, make_absolute,
+       make_uncertain, sample, KalmanFilter, EstimatorHistory, plot_archive,
+       LeastSquaresEstimator, add!, NearestNeighborMTF
 
 abstract type Estimator end
-abstract type Filter <: Estimator end
+abstract type SequentialEstimator{T} <: Estimator end
+abstract type BatchEstimator{T} <: Estimator end
 
 
 include("states.jl")
 include("systems.jl")
 include("observers.jl")
 include("archive.jl")
-include("least_squares.jl")
+
 include("kalman_filter.jl")
 #include("extended_kalman_filter.jl")
 #include("unscented_kalman_filter.jl")
+include("multi_target_filter.jl")
+
+include("least_squares.jl")
 
 end
