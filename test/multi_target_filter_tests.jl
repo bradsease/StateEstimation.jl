@@ -19,7 +19,8 @@ initial_est = UncertainContinuousState([1.0, 2.0], 0.1*eye(2))
 kf2 = KalmanFilter(linear_sys, linear_obs, initial_est)
 
 
-mtf = NearestNeighborMTF()
+mtf = NearestNeighborMTF(kf1)
 #add!(mtf, kf1)
-#add!(mtf, kf2)
-add!(mtf, [kf1, kf2])
+add!(mtf, kf1)
+#add!(mtf, [kf1, kf2])
+process!(mtf, simulate(mtf.filter_bank[1], mtf.filter_bank[1].estimate.t+1))

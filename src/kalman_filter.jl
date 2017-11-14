@@ -2,13 +2,13 @@
 Kalman Filter Types and Methods
 """
 
-abstract type AbstractKalmanFilter{T} <: SequentialEstimator{T} end
+abstract type AbstractKalmanFilter{T,S} <: SequentialEstimator{T,S} end
 
 
 """
 Standard Kalman Filter type
 """
-immutable KalmanFilter{T,S<:AbstractUncertainState{T}} <: AbstractKalmanFilter{T}
+immutable KalmanFilter{T,S<:AbstractUncertainState{T}} <: AbstractKalmanFilter{T,S}
     sys::LinearSystem{T}
     obs::LinearObserver{T}
     estimate::S
@@ -50,18 +50,18 @@ end
 
 
 """
-    correct!(kf::KalmanFilter, z::AbstractState)
+    correct!(kf::KalmanFilter, z::AbstractAbsoluteState)
 
 Kalman filter correction step.
 """
 function correct!{T}(kf::DiscreteKalmanFilter{T}, z::DiscreteState{T})
     if kf.estimate.t != z.t
-        error("Measurement does not correspond to current discrete-time step.")
+        error("Measurement does not correspond to current time step.")
     end
     yk = predict(kf.obs, kf.estimate)
     Kk = kf.estimate.P*kf.obs.H'*inv(yk.P)
-    kf.estimate.x .+= Kk*(z.x - yk.x)
-    kf.estimate.P .-= Kk*kf.estimate.P*Kk'
+    kf.estimate.x += Kk*(z.x - yk.x)
+    kf.estimate.P -= Kk*kf.estimate.P*Kk'
     return nothing
 end
 function correct!{T}(kf::DiscreteKalmanFilter{T}, z::DiscreteState{T},
@@ -72,8 +72,8 @@ function correct!{T}(kf::DiscreteKalmanFilter{T}, z::DiscreteState{T},
     yk = predict(kf.obs, kf.estimate)
     residual = (z.x - yk.x)
     Kk = kf.estimate.P*kf.obs.H'*inv(yk.P)
-    kf.estimate.x .+= Kk*residual
-    kf.estimate.P .-= Kk*kf.estimate.P*Kk'
+    kf.estimate.x += Kk*residual
+    kf.estimate.P -= Kk*kf.estimate.P*Kk'
     push!(archive.residuals, UncertainDiscreteState(residual, yk.P, z.t))
     return nothing
 end
@@ -83,8 +83,8 @@ function correct!{T}(kf::ContinuousKalmanFilter{T}, z::ContinuousState{T})
     end
     yk = predict(kf.obs, kf.estimate)
     Kk = kf.estimate.P*kf.obs.H'*inv(yk.P)
-    kf.estimate.x .+= Kk*(z.x - yk.x)
-    kf.estimate.P .-= Kk*kf.estimate.P*Kk'
+    kf.estimate.x += Kk*(z.x - yk.x)
+    kf.estimate.P -= Kk*kf.estimate.P*Kk'
     return nothing
 end
 function correct!{T}(kf::ContinuousKalmanFilter{T}, z::ContinuousState{T},
@@ -95,8 +95,8 @@ function correct!{T}(kf::ContinuousKalmanFilter{T}, z::ContinuousState{T},
     yk = predict(kf.obs, kf.estimate)
     residual = (z.x - yk.x)
     Kk = kf.estimate.P*kf.obs.H'*inv(yk.P)
-    kf.estimate.x .+= Kk*residual
-    kf.estimate.P .-= Kk*kf.estimate.P*Kk'
+    kf.estimate.x += Kk*residual
+    kf.estimate.P -= Kk*kf.estimate.P*Kk'
     push!(archive.residuals, UncertainContinuousState(residual, yk.P, z.t))
     return nothing
 end
@@ -122,7 +122,6 @@ function process!{T}(kf::KalmanFilter{T}, z::AbstractState{T},
 
     return nothing
 end
-
 
 
 """

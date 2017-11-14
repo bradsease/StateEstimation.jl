@@ -11,7 +11,7 @@ export Estimator, SequentialEstimator, AbstractSystem, AbstractObserver,
        LeastSquaresEstimator, add!, NearestNeighborMTF, distance, mahalanobis
 
 abstract type Estimator end
-abstract type SequentialEstimator{T} <: Estimator end
+abstract type SequentialEstimator{T,S} <: Estimator end
 abstract type BatchEstimator{T} <: Estimator end
 
 
