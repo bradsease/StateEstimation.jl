@@ -154,3 +154,30 @@ function sample{T}(state::UncertainContinuousState{T})
     return ContinuousState(
         state.x+chol(Hermitian(state.P))*randn(T, length(state.x)), state.t)
 end
+
+
+"""
+    distance(state1::AbstractState{T}, state2::AbstractState{T})
+"""
+function distance{T}(state1::AbstractState{T}, state2::AbstractState{T})
+    return sqrt(sum((state1.x .- state2.x).^2))
+end
+
+
+"""
+    mahalanobis(x::AbstractAbsoluteState{T}, y::AbstractUncertainState{T})
+"""
+function mahalanobis{T}(x::AbstractAbsoluteState{T},
+                        y::AbstractUncertainState{T})
+    diff_vec = x.x .- y.x
+    return sqrt(diff_vec'*inv(y.P)*diff_vec)
+end
+"""
+    mahalanobis(x::AbstractAbsoluteState{T}, y::AbstractAbsoluteState{T},
+                P::Array{T,2})
+"""
+function mahalanobis{T}(x::AbstractAbsoluteState{T},
+                        y::AbstractAbsoluteState{T}, P::Array{T,2})
+    diff_vec = x.x .- y.x
+    return sqrt(diff_vec'*inv(P)*diff_vec)
+end

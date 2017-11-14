@@ -19,8 +19,7 @@ continuous_state = ContinuousState(ones(2), 0.0)
 
 # Create uncertain continuous tates
 unc_continuous_state = UncertainContinuousState(ones(2), eye(2))
-unc_continuous_state = UncertainContinuousState(ones(2),
-                                                               eye(2), 0.0)
+unc_continuous_state = UncertainContinuousState(ones(2), eye(2), 0.0)
 
 # Convert state types with constructors
 @inferred DiscreteState(unc_discrete_state)
@@ -41,3 +40,13 @@ unc_continuous_state = UncertainContinuousState(ones(2),
 # Sample uncertain states
 @inferred sample(unc_discrete_state)
 @inferred sample(unc_continuous_state)
+
+# Test distance metrics
+@test distance(discrete_state, discrete_state) == 0
+@test distance(discrete_state, unc_discrete_state) == 0
+@test mahalanobis(discrete_state, unc_continuous_state) == 0
+@test mahalanobis(DiscreteState([4.0, 1.0]), unc_discrete_state) == 3
+@test mahalanobis(discrete_state, unc_discrete_state) ==
+    mahalanobis(discrete_state, discrete_state, unc_discrete_state.P)
+@inferred distance(discrete_state, discrete_state)
+@inferred mahalanobis(discrete_state, unc_continuous_state)
