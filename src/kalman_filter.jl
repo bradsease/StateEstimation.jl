@@ -39,10 +39,6 @@ const ContinuousKalmanFilter{T} =
 
 Kalman filter prediction step.
 """
-function predict!{T}(kf::DiscreteKalmanFilter{T})
-    predict!(kf.sys, kf.estimate)
-    return nothing
-end
 function predict!{T}(kf::KalmanFilter{T}, t)
     predict!(kf.sys, kf.estimate, t)
     return nothing
@@ -138,5 +134,5 @@ end
 Simulate next measurement for a discrete Kalman filter.
 """
 function simulate{T}(kf::DiscreteKalmanFilter{T})
-    return sample(predict(kf.obs, predict(kf.sys, kf.estimate)))
+    return sample(predict(kf.obs,predict(kf.sys, kf.estimate, kf.estimate.t+1)))
 end

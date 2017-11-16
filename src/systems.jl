@@ -72,20 +72,13 @@ end
 
 Predict a state through a linear system.
 """
-function predict{T}(sys::LinearSystem{T}, state::DiscreteState{T})
-    return DiscreteState(sys.A*state.x, state.t+1)
+function predict{T}(sys::LinearSystem{T}, state::AbstractAbsoluteState{T}, t)
+    return state_transition_matrix(sys, state, t) * state
 end
-function predict{T}(sys::LinearSystem{T}, state::UncertainDiscreteState{T})
-    return UncertainDiscreteState(sys.A*state.x, sys.A*state.P*sys.A'+sys.Q,
-                                  state.t+1)
-end
-function predict{T}(sys::LinearSystem{T}, state::ContinuousState{T}, t::T)
-    return ContinuousState(expm(sys.A*(t-state.t))*state.x, t)
-end
-function predict{T}(sys::LinearSystem{T}, state::UncertainContinuousState{T},
-                    t::T)
-    A = expm(sys.A*(t-state.t))
-    return UncertainContinuousState(A*state.x, A*state.P*A'+sys.Q, t)
+function predict{T}(sys::LinearSystem{T}, state::AbstractUncertainState{T}, t)
+    out_state = state_transition_matrix(sys, state, t) * state
+    out_state.P .+= sys.Q
+    return out_state
 end
 
 
@@ -94,92 +87,13 @@ end
 
 In-place prediction of a state through a linear system.
 """
-function predict!{T}(sys::LinearSystem{T}, state::DiscreteState{T})
-    state.x = sys.A*state.x
-    state.t += 1
+function predict!{T}(sys::LinearSystem{T}, state::AbstractAbsoluteState{T}, t)
+    state .= state_transition_matrix(sys, state, t) * state
     return nothing
 end
-function predict!{T}(sys::LinearSystem{T}, state::UncertainDiscreteState{T})
-    state.x = sys.A*state.x
-    state.P = sys.A*state.P*sys.A'+sys.Q
-    state.t += 1
-    return nothing
-end
-function predict!{T}(sys::LinearSystem{T}, state::ContinuousState{T}, t::T)
-    state.x = expm(sys.A*(t-state.t))*state.x
-    state.t = t
-    return nothing
-end
-function predict!{T}(sys::LinearSystem{T}, state::UncertainContinuousState{T},
-                    t::T)
-    A = expm(sys.A*(t-state.t))
-    state.x = A*state.x
-    state.P = A*state.P*A'+sys.Q
-    state.t = t
-    return nothing
-end
-
-
-
-"""
-    predict(sys::AbstractSystem{T}, state::DiscreteState{T}, t::Integer)
-
-General multi-step discrete-time prediction.
-"""
-function predict{T}(sys::AbstractSystem{T}, state::DiscreteState{T}, t::Integer)
-    if t < state.t
-        error("Discrete states can only be predicted forward in time.")
-    end
-
-    out_state = deepcopy(state)
-    for idx = 1:t-state.t
-        predict!(sys, out_state)
-    end
-
-    return out_state
-end
-function predict{T}(sys::AbstractSystem{T}, state::UncertainDiscreteState{T},
-                    t::Integer)
-    if t < state.t
-        error("Discrete states can only be predicted forward in time.")
-    end
-
-    out_state = deepcopy(state)
-    for idx = 1:t-state.t
-        predict!(sys, out_state)
-    end
-
-    return out_state
-end
-
-
-"""
-    predict!(sys::AbstractSystem{T}, state::DiscreteState{T}, t::Integer)
-
-Multi-step in-place discrete-time prediction.
-"""
-function predict!{T}(sys::AbstractSystem{T}, state::UncertainDiscreteState{T},
-                     t::Integer)
-    if t < state.t
-        error("Discrete states can only be predicted forward in time.")
-    end
-
-    for idx = 1:t-state.t
-        predict!(sys, state)
-    end
-
-    return nothing
-end
-function predict!{T}(sys::AbstractSystem{T}, state::DiscreteState{T},
-                     t::Integer)
-    if t < state.t
-        error("Discrete states can only be predicted forward in time.")
-    end
-
-    for idx = 1:t-state.t
-        predict!(sys, state)
-    end
-
+function predict!{T}(sys::LinearSystem{T}, state::AbstractUncertainState{T}, t)
+    state .= state_transition_matrix(sys, state, t) * state
+    state.P .+= sys.Q
     return nothing
 end
 
