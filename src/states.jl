@@ -181,3 +181,129 @@ function mahalanobis{T}(x::AbstractAbsoluteState{T},
     diff_vec = x.x .- y.x
     return sqrt(diff_vec'*inv(P)*diff_vec)
 end
+
+
+
+"""
+State addition.
+"""
+function Base.:+(state::AbstractState, a)
+    out = deepcopy(state)
+    out.x .+= a
+    return out
+end
+function Base.:+(a, state::AbstractState)
+    out = deepcopy(state)
+    out.x .+= a
+    return out
+end
+function Base.broadcast!(::typeof(+), out::AbstractState, state::AbstractState,
+                         a)
+    out.x .= state.x .+ a
+    return nothing
+end
+function Base.broadcast!(::typeof(+), out::AbstractState, a,
+                         state::AbstractState)
+    out.x .= state.x .+ a
+    return nothing
+end
+
+
+"""
+State subtraction.
+"""
+function Base.:-(state::AbstractState, a)
+    out = deepcopy(state)
+    out.x .-= a
+    return out
+end
+function Base.:-(a, state::AbstractState)
+    out = deepcopy(state)
+    out.x .-= a
+    return out
+end
+function Base.broadcast!(::typeof(-), out::AbstractState, state::AbstractState,
+                         a)
+    out.x .= state.x .- a
+    return nothing
+end
+function Base.broadcast!(::typeof(-), out::AbstractState, a,
+                         state::AbstractState)
+    out.x .= state.x .- a
+    return nothing
+end
+
+
+"""
+State multiplication.
+"""
+function Base.:*(state::AbstractState, a::Number)
+    out = deepcopy(state)
+    out .*= a
+    return out
+end
+function Base.:*(a::Number, state::AbstractState)
+    out = deepcopy(state)
+    out .*= a
+    return out
+end
+function Base.broadcast!(::typeof(*), out::AbstractAbsoluteState,
+                         state::AbstractState, a::Number)
+    out.x .= state.x .* a
+    return nothing
+end
+function Base.broadcast!(::typeof(*), out::AbstractAbsoluteState, a::Number,
+                         state::AbstractState)
+    out.x .= state.x .* a
+    return nothing
+end
+function Base.broadcast!(::typeof(*), out::AbstractUncertainState, a::Number,
+                         state::AbstractUncertainState)
+    out.x .= state.x .* a
+    out.P .= state.P .* a^2
+    return nothing
+end
+function Base.broadcast!(::typeof(*), out::AbstractUncertainState,
+                         state::AbstractUncertainState, a::Number)
+    out.x .= state.x .* a
+    out.P .= state.P .* a^2
+    return nothing
+end
+
+function Base.:*(A::Matrix, state::AbstractState)
+    out = deepcopy(state)
+    out .= A .* out
+    return out
+end
+function Base.broadcast!(::typeof(*), out::AbstractAbsoluteState, A::Matrix,
+                         state::AbstractState)
+    out.x .= A * state.x
+    return nothing
+end
+function Base.broadcast!(::typeof(*), out::AbstractUncertainState, A::Matrix,
+                         state::AbstractUncertainState)
+    out.x .= A * state.x
+    out.P .= A * state.P * A'
+    return nothing
+end
+function Base.broadcast(::typeof(*), A::Matrix, state::AbstractState)
+    return A * state
+end
+
+
+"""
+State assignment operations.
+"""
+function Base.broadcast!(::typeof(identity), out::AbstractAbsoluteState,
+                            state::AbstractAbsoluteState)
+    out.x .= state.x
+    out.t = state.t
+    return nothing
+end
+function Base.broadcast!(::typeof(identity), out::AbstractUncertainState,
+                            state::AbstractUncertainState)
+    out.x .= state.x
+    out.P .+ state.P
+    out.t = state.t
+    return nothing
+end
