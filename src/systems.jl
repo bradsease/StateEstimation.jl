@@ -73,11 +73,14 @@ end
 Predict a state through a linear system.
 """
 function predict{T}(sys::LinearSystem{T}, state::AbstractAbsoluteState{T}, t)
-    return state_transition_matrix(sys, state, t) * state
+    out_state = state_transition_matrix(sys, state, t) * state
+    out_state.t = t
+    return out_state
 end
 function predict{T}(sys::LinearSystem{T}, state::AbstractUncertainState{T}, t)
     out_state = state_transition_matrix(sys, state, t) * state
     out_state.P .+= sys.Q
+    out_state.t = t
     return out_state
 end
 
@@ -89,11 +92,13 @@ In-place prediction of a state through a linear system.
 """
 function predict!{T}(sys::LinearSystem{T}, state::AbstractAbsoluteState{T}, t)
     state .= state_transition_matrix(sys, state, t) * state
+    state.t = t
     return nothing
 end
 function predict!{T}(sys::LinearSystem{T}, state::AbstractUncertainState{T}, t)
     state .= state_transition_matrix(sys, state, t) * state
     state.P .+= sys.Q
+    state.t = t
     return nothing
 end
 

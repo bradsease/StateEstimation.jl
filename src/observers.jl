@@ -17,7 +17,7 @@ struct LinearObserver{T<:AbstractFloat} <: AbstractObserver{T}
     R::Covariance{T}
 
     function LinearObserver(H::Matrix{T}, R::Covariance{T}) where T
-        if size(H) != size(R)
+        if (size(H,1), size(H,1)) != size(R)
             error("Incompatible size of system matrices.")
         end
         new{T}(H, R)
@@ -47,6 +47,35 @@ function assert_compatibility{T}(state::AbstractState{T},obs::LinearObserver{T})
     if size(obs.H, 1) != length(state.x)
        error("Linear observer incompatible with input state.")
     end
+end
+
+
+"""
+    observable(A, H)
+
+Evaluate the observability of a linear model.
+"""
+function observable(A, H)
+    n = size(A, 2)
+    p = size(H, 1)
+    observability = zeros(n*p, n)
+
+    observability[1:p, :] .= H
+    for idx = 1:n-1
+        observability[p*idx+1:p*(idx+1), :] .= H * A
+    end
+
+    if rank(observability) == n
+        return true
+    else
+        return false
+    end
+end
+"""
+    observable(sys::LinearSystem{T}, obs::LinearObserver{T})
+"""
+function observable{T}(sys::LinearSystem{T}, obs::LinearObserver{T})
+    return observable(sys.A, obs.H)
 end
 
 

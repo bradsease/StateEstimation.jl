@@ -9,7 +9,8 @@ export Estimator, SequentialEstimator, AbstractSystem, AbstractObserver,
        LinearObserver, measure, simulate, process!, make_absolute,
        make_uncertain, sample, KalmanFilter, EstimatorHistory, plot_archive,
        LeastSquaresEstimator, add!, NearestNeighborMTF, distance, mahalanobis,
-       AbstractState, AbstractAbsoluteState, AbstractUncertainState
+       AbstractState, AbstractAbsoluteState, AbstractUncertainState,
+       state_transition_matrix, observable, solve
 
 abstract type Estimator end
 abstract type SequentialEstimator{T,S} <: Estimator end

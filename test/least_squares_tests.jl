@@ -15,3 +15,5 @@ lse = LeastSquaresEstimator(linear_sys, linear_obs, initial_est)
 for idx = 1:10
     add!(lse, simulate(lse, (idx-1)*0.1))
 end
+
+println(solve(lse))

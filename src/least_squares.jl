@@ -14,7 +14,7 @@ immutable LeastSquaresEstimator{T,S<:AbstractUncertainState{T},
     measurements::Vector{M}
 
     function LeastSquaresEstimator(sys::LinearSystem{T}, obs::LinearObserver{T},
-                                   estimate::S) where {T,S}
+        estimate::S) where {T,S<:AbstractUncertainState{T}}
         assert_compatibility(sys, estimate)
         assert_compatibility(obs, estimate)
         M = absolute_type(estimate)
@@ -49,12 +49,30 @@ function add!{T,S,M}(lse::LeastSquaresEstimator{T,S,M}, measurements::Vector{M})
 end
 
 
-#"""
-#    solve!(lse:LeastSquaresEstimator)
-#"""
-#function solve!(lse::LeastSquaresEstimator)
-#
-#end
+"""
+    solve!(lse:LeastSquaresEstimator)
+
+TODO: Add covariance calculation
+"""
+function solve{T}(lse::LeastSquaresEstimator{T})
+    m = size(lse.obs.H, 1)
+    n = length(lse.estimate.x)
+    A = zeros(n, m*length(lse.measurements))
+    b = zeros(m*length(lse.measurements))
+
+    for idx = 1:length(lse.measurements)
+        start_idx = (idx-1)*m + 1
+        end_idx = start_idx + m - 1
+
+        A[:, start_idx:end_idx] .= state_transition_matrix(lse.sys,
+            lse.estimate, lse.measurements[idx].t)' * lse.obs.H'
+        b[start_idx:end_idx] .= lse.measurements[idx].x
+    end
+
+    estimate = deepcopy(lse.estimate)
+    estimate.x = inv(A*A')*(A*b)
+    return estimate
+end
 #function solve!(lse::LeastSquaresEstimator{T}, archive::EstimatorHistory{T})
 #
 #end

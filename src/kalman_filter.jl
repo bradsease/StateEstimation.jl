@@ -115,7 +115,6 @@ function process!{T}(kf::KalmanFilter{T}, z::AbstractState{T},
     predict!(kf, z.t)
     correct!(kf, z, archive)
     push!(archive.states, deepcopy(kf.estimate))
-
     return nothing
 end
 
