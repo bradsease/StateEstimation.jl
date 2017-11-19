@@ -9,13 +9,15 @@ using Base.Test
 function test_state_addition_subtraction(state::AbstractState)
     for a = -1:0.5:1
         @test (state + a).x == (state.x+a)
+        @test (a + state).x == (state.x+a)
         @test (state - a).x == (state.x-a)
+        @test (a - state).x == (state.x-a)
         new_state = deepcopy(state)
         new_state .-= a
-        @test new_state.x == (state.x-a)
-        new_state = deepcopy(state)
         new_state .+= a
-        @test new_state.x == (state.x+a)
+        new_state .= a .+ new_state
+        new_state .= a .- new_state
+        @test new_state.x == state.x
     end
 end
 test_state_addition_subtraction(DiscreteState(ones(2)))
@@ -56,18 +58,25 @@ test_state_scalar_multiplication(UncertainContinuousState(ones(2), eye(2)))
 @test UncertainContinuousState(ones(2), eye(2)) != ContinuousState(ones(2))
 
 # Create discrete states
-discrete_state = DiscreteState(ones(2))
-discrete_state = DiscreteState(ones(2), 0)
-
-# Create uncertain discrete states
-unc_discrete_state = UncertainDiscreteState(ones(2), eye(2))
-unc_discrete_state = UncertainDiscreteState(ones(2), eye(2), 0)
+@test size(DiscreteState(1.0).x) == (1,)
+@test size(UncertainDiscreteState(1.0, 2.0).x) == (1,)
+@test size(UncertainDiscreteState(1.0, 2.0).P) == (1, 1)
+@test DiscreteState(1.0) == DiscreteState(UncertainDiscreteState(1.0, 2.0))
+#
 
 # Create continuous states
+@test size(ContinuousState(1.0).x) == (1,)
+@test size(UncertainContinuousState(1.0, 2.0).x) == (1,)
+@test size(UncertainContinuousState(1.0, 2.0).P) == (1, 1)
+@test ContinuousState(1.0) == ContinuousState(UncertainContinuousState(1.0,2.0))
+
+# Create states
+discrete_state = DiscreteState(ones(2))
+discrete_state = DiscreteState(ones(2), 0)
+unc_discrete_state = UncertainDiscreteState(ones(2), eye(2))
+unc_discrete_state = UncertainDiscreteState(ones(2), eye(2), 0)
 continuous_state = ContinuousState(ones(2))
 continuous_state = ContinuousState(ones(2), 0.0)
-
-# Create uncertain continuous tates
 unc_continuous_state = UncertainContinuousState(ones(2), eye(2))
 unc_continuous_state = UncertainContinuousState(ones(2), eye(2), 0.0)
 
