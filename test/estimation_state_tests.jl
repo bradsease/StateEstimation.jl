@@ -5,6 +5,56 @@ using Base.Test
 @test 1 == 1
 
 
+
+function test_state_addition_subtraction(state::AbstractState)
+    for a = -1:0.5:1
+        @test (state + a).x == (state.x+a)
+        @test (state - a).x == (state.x-a)
+        new_state = deepcopy(state)
+        new_state .-= a
+        @test new_state.x == (state.x-a)
+        new_state = deepcopy(state)
+        new_state .+= a
+        @test new_state.x == (state.x+a)
+    end
+end
+test_state_addition_subtraction(DiscreteState(ones(2)))
+test_state_addition_subtraction(ContinuousState(ones(2)))
+test_state_addition_subtraction(UncertainDiscreteState(ones(2), eye(2)))
+test_state_addition_subtraction(UncertainContinuousState(ones(2), eye(2)))
+
+function test_state_scalar_multiplication(state::AbstractState)
+    for a = -1:0.5:1
+        @test (state*a).x == (state.x*a)
+        @test (a*state).x == (state.x*a)
+        new_state = deepcopy(state)
+        new_state .*= a
+        @test new_state.x == (state.x*a)
+        if typeof(state) <: AbstractUncertainState
+            @test (state*a).P == (state.P*a^2)
+            @test (a*state).P == (state.P*a^2)
+            new_state = deepcopy(state)
+            new_state .*= a
+            @test new_state.P == (state.P*a^2)
+        end
+    end
+end
+test_state_scalar_multiplication(DiscreteState(ones(2)))
+test_state_scalar_multiplication(ContinuousState(ones(2)))
+test_state_scalar_multiplication(UncertainDiscreteState(ones(2), eye(2)))
+test_state_scalar_multiplication(UncertainContinuousState(ones(2), eye(2)))
+
+# State equality checks
+@test DiscreteState(ones(2)) == DiscreteState([1.0, 1.0])
+@test UncertainDiscreteState(ones(2), eye(2)) ==
+    UncertainDiscreteState([1.0, 1.0], eye(2))
+@test UncertainDiscreteState(ones(2), eye(2)) != DiscreteState(ones(2))
+@test DiscreteState(ones(2)) != ContinuousState(ones(2))
+@test ContinuousState(ones(2)) == ContinuousState([1.0, 1.0])
+@test UncertainContinuousState(ones(2), eye(2)) ==
+    UncertainContinuousState([1.0, 1.0], eye(2))
+@test UncertainContinuousState(ones(2), eye(2)) != ContinuousState(ones(2))
+
 # Create discrete states
 discrete_state = DiscreteState(ones(2))
 discrete_state = DiscreteState(ones(2), 0)

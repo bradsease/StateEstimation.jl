@@ -247,6 +247,26 @@ end
 
 
 """
+State equality check.
+"""
+function Base.:(==){S<:AbstractAbsoluteState}(state1::S, state2::S)
+    if state1.x == state2.x && state1.t == state2.t
+        return true
+    else
+        return false
+    end
+end
+function Base.:(==){S<:AbstractUncertainState}(state1::S, state2::S)
+    if state1.x == state2.x && state1.P == state2.P && state1.t == state2.t
+        return true
+    else
+        return false
+    end
+end
+Base.:(==)(state1::AbstractState, state2::AbstractState) = false
+
+
+"""
 State multiplication.
 """
 function Base.:*(state::AbstractState, a::Number)
