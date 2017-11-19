@@ -19,6 +19,8 @@ mutable struct DiscreteState{T<:AbstractFloat} <: AbstractAbsoluteState{T}
     DiscreteState(x::Vector{T}, t::Int64) where {T} = new{T}(x, t)
     DiscreteState(x::Vector{T}) where {T} = new{T}(x, 0)
 end
+DiscreteState(x::AbstractFloat) = DiscreteState([x])
+DiscreteState(x::AbstractFloat, t::Int64) = DiscreteState([x], t)
 
 """
 Uncertain discrete-time state.
@@ -44,6 +46,10 @@ mutable struct UncertainDiscreteState{T<:AbstractFloat} <:
             new{T}(x, P, 0)
     end
 end
+UncertainDiscreteState{T<:AbstractFloat}(x::T, P::T) =
+    UncertainDiscreteState([x], reshape([P],1,1))
+UncertainDiscreteState{T<:AbstractFloat}(x::T, P::T, t::Int64) =
+    UncertainDiscreteState([x], reshape([P],1,1), t)
 
 function DiscreteState{T}(state::UncertainDiscreteState{T})
     return DiscreteState(state.x, state.t)
@@ -69,6 +75,8 @@ mutable struct ContinuousState{T<:AbstractFloat} <: AbstractAbsoluteState{T}
     ContinuousState(x::Vector{T}, t::T) where {T} = new{T}(x, t)
     ContinuousState(x::Vector{T}) where {T} = new{T}(x, 0.0)
 end
+ContinuousState(x::AbstractFloat) = ContinuousState([x])
+ContinuousState{T<:AbstractFloat}(x::T, t::T) = ContinuousState([x], t)
 
 """
 Uncertain continuous-time state.
@@ -94,6 +102,10 @@ mutable struct UncertainContinuousState{T<:AbstractFloat} <:
             new{T}(x, P, 0.0)
     end
 end
+UncertainContinuousState{T<:AbstractFloat}(x::T, P::T) =
+    UncertainContinuousState([x], reshape([P],1,1))
+UncertainContinuousState{T<:AbstractFloat}(x::T, P::T, t::T) =
+    UncertainContinuousState([x], reshape([P],1,1), t)
 
 function ContinuousState{T}(state::UncertainContinuousState{T})
     return ContinuousState(state.x, state.t)

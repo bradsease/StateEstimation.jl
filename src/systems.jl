@@ -30,6 +30,9 @@ struct LinearSystem{T<:AbstractFloat} <: AbstractSystem{T}
         new{T}(A, zeros(size(A)))
     end
 end
+function LinearSystem{T<:AbstractFloat}(A::T, Q::T)
+    return LinearSystem(reshape([A], 1, 1), reshape([Q], 1, 1))
+end
 
 """
     assert_compatibility(sys::LinearSystem{T}, state::AbstractState{T})
