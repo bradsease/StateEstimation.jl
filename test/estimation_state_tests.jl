@@ -129,13 +129,29 @@ test_state_scalar_multiplication(ContinuousState(ones(2)))
 test_state_scalar_multiplication(UncertainDiscreteState(ones(2), eye(2)))
 test_state_scalar_multiplication(UncertainContinuousState(ones(2), eye(2)))
 
+# Test in-place assignment operations
+state1 = DiscreteState(ones(2))
+state1 .= DiscreteState(zeros(2))
+@test state1.x == zeros(2)
+state1 = ContinuousState(ones(2))
+state1 .= ContinuousState(zeros(2))
+@test state1.x == zeros(2)
+state1 = UncertainDiscreteState(ones(2), eye(2))
+state1 .= UncertainDiscreteState(zeros(2), zeros(2,2))
+@test (state1.x == zeros(2)) & (state1.P == zeros(2,2))
+state1 = UncertainContinuousState(ones(2), eye(2))
+state1 .= UncertainContinuousState(zeros(2), zeros(2,2))
+@test (state1.x == zeros(2)) & (state1.P == zeros(2,2))
+
 # State equality checks
 @test DiscreteState(ones(2)) == DiscreteState([1.0, 1.0])
+@test DiscreteState(ones(2)) != DiscreteState(zeros(2))
 @test UncertainDiscreteState(ones(2), eye(2)) ==
     UncertainDiscreteState([1.0, 1.0], eye(2))
-@test (UncertainDiscreteState(ones(2), eye(2))==DiscreteState(ones(2))) == false
+@test UncertainDiscreteState(ones(2), eye(2)) != DiscreteState(ones(2))
 @test (DiscreteState(ones(2)) == ContinuousState(ones(2))) == false
 @test ContinuousState(ones(2)) == ContinuousState([1.0, 1.0])
+@test ContinuousState(ones(2)) != ContinuousState(zeros(2))
 @test UncertainContinuousState(ones(2), eye(2)) ==
     UncertainContinuousState([1.0, 1.0], eye(2))
 @test UncertainContinuousState(ones(2), eye(2)) != ContinuousState(ones(2))

@@ -318,24 +318,34 @@ function Base.broadcast!(::typeof(*), out::AbstractUncertainState, A::Matrix,
     out.P .= A * state.P * A'
     return nothing
 end
-function Base.broadcast(::typeof(*), A::Matrix, state::AbstractState)
-    return A * state
-end
 
 
 """
 State assignment operations.
 """
-function Base.broadcast!(::typeof(identity), out::AbstractAbsoluteState,
-                            state::AbstractAbsoluteState)
+function Base.broadcast!(::typeof(identity), out::DiscreteState,
+                            state::DiscreteState)
     out.x .= state.x
     out.t = state.t
     return nothing
 end
-function Base.broadcast!(::typeof(identity), out::AbstractUncertainState,
-                            state::AbstractUncertainState)
+function Base.broadcast!(::typeof(identity), out::ContinuousState,
+                            state::ContinuousState)
     out.x .= state.x
-    out.P .+ state.P
+    out.t = state.t
+    return nothing
+end
+function Base.broadcast!(::typeof(identity), out::UncertainDiscreteState,
+                            state::UncertainDiscreteState)
+    out.x .= state.x
+    out.P .= state.P
+    out.t = state.t
+    return nothing
+end
+function Base.broadcast!(::typeof(identity), out::UncertainContinuousState,
+                            state::UncertainContinuousState)
+    out.x .= state.x
+    out.P .= state.P
     out.t = state.t
     return nothing
 end
