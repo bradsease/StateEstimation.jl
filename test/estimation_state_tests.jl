@@ -13,6 +13,8 @@ using Base.Test
 @test DiscreteState(1.0) == DiscreteState(UncertainDiscreteState(1.0, 2.0))
 @test UncertainDiscreteState(ones(2), eye(2)) ==
     UncertainDiscreteState(DiscreteState(ones(2)), eye(2))
+@test UncertainDiscreteState(ones(2), zeros(2,2)) ==
+    UncertainDiscreteState(DiscreteState(ones(2)))
 
 # Continuous state constructors
 @test size(ContinuousState(1.0).x) == (1,)
@@ -22,6 +24,8 @@ using Base.Test
 @test ContinuousState(1.0) == ContinuousState(UncertainContinuousState(1.0,2.0))
 @test UncertainContinuousState(ones(2), eye(2)) ==
     UncertainContinuousState(ContinuousState(ones(2)), eye(2))
+@test UncertainContinuousState(ones(2), zeros(2,2)) ==
+    UncertainContinuousState(ContinuousState(ones(2)))
 
 # Create testing states
 discrete_state = DiscreteState(ones(2))
@@ -40,9 +44,13 @@ unc_continuous_state = UncertainContinuousState(ones(2), eye(2), 0.0)
 @test StateEstimation.uncertain_type(continuous_state) <: UncertainContinuousState
 @test discrete_state == make_absolute(unc_discrete_state)
 @test unc_discrete_state == make_uncertain(discrete_state, unc_discrete_state.P)
+@test make_uncertain(discrete_state, zeros(2,2)) ==
+    make_uncertain(discrete_state)
 @test continuous_state == make_absolute(unc_continuous_state)
 @test unc_continuous_state == make_uncertain(continuous_state,
                                              unc_continuous_state.P)
+@test make_uncertain(continuous_state, zeros(2,2)) ==
+    make_uncertain(continuous_state)
 
 # Sample uncertain states
 @test typeof(sample(unc_discrete_state)) <: DiscreteState
@@ -92,6 +100,27 @@ function test_state_scalar_multiplication(state::AbstractState)
             @test new_state.P == (state.P*a^2)
             new_state .= a .* new_state
             @test new_state.P == (state.P*a^4)
+        end
+    end
+end
+test_state_scalar_multiplication(DiscreteState(ones(2)))
+test_state_scalar_multiplication(ContinuousState(ones(2)))
+test_state_scalar_multiplication(UncertainDiscreteState(ones(2), eye(2)))
+test_state_scalar_multiplication(UncertainContinuousState(ones(2), eye(2)))
+
+function test_state_matrix_multiplication(state::AbstractState)
+    test_matrices = [eye(2), ones(2,2), -ones(2,2), zeros(2,2)]
+    for idx = 1:length(test_matrices)
+        A = test_matrices[idx]
+        @test (A*state).x == A*state.x
+        new_state = deepcopy(state)
+        new_state .= A * state
+        @test new_state.x == A*state.x
+        if typeof(state) <: AbstractUncertainState
+            @test (A*state).P == A*state.P*A'
+            new_state = deepcopy(state)
+            new_state .= A * state
+            @test new_state.P == A*state.P*A'
         end
     end
 end
