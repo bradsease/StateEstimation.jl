@@ -52,7 +52,8 @@ Kalman filter correction step.
 """
 function correct!{T}(kf::DiscreteKalmanFilter{T}, z::DiscreteState{T})
     if kf.estimate.t != z.t
-        error("Measurement does not correspond to current time step.")
+        throw(ArgumentError(
+            "Measurement does not correspond to current time step."))
     end
     yk = predict(kf.obs, kf.estimate)
     Kk = kf.estimate.P*kf.obs.H'*inv(yk.P)
@@ -63,7 +64,8 @@ end
 function correct!{T}(kf::DiscreteKalmanFilter{T}, z::DiscreteState{T},
                      archive::EstimatorHistory{T})
     if kf.estimate.t != z.t
-        error("Measurement does not correspond to current discrete-time step.")
+        throw(ArgumentError(
+         "Measurement does not correspond to current time step."))
     end
     yk = predict(kf.obs, kf.estimate)
     residual = (z.x - yk.x)
@@ -75,7 +77,8 @@ function correct!{T}(kf::DiscreteKalmanFilter{T}, z::DiscreteState{T},
 end
 function correct!{T}(kf::ContinuousKalmanFilter{T}, z::ContinuousState{T})
     if kf.estimate.t != z.t
-        error("Measurement does not correspond to current time step.")
+        throw(ArgumentError(
+         "Measurement does not correspond to current time step."))
     end
     yk = predict(kf.obs, kf.estimate)
     Kk = kf.estimate.P*kf.obs.H'*inv(yk.P)
@@ -86,7 +89,8 @@ end
 function correct!{T}(kf::ContinuousKalmanFilter{T}, z::ContinuousState{T},
                      archive::EstimatorHistory{T})
     if kf.estimate.t != z.t
-        error("Measurement does not correspond to current time step.")
+        throw(ArgumentError(
+            "Measurement does not correspond to current time step."))
     end
     yk = predict(kf.obs, kf.estimate)
     residual = (z.x - yk.x)

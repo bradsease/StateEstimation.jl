@@ -5,7 +5,7 @@ module StateEstimation
 
 export Estimator, SequentialEstimator, AbstractSystem, AbstractObserver,
        DiscreteState, UncertainDiscreteState, ContinuousState,
-       UncertainContinuousState, LinearSystem, predict, predict!,
+       UncertainContinuousState, LinearSystem, predict, predict!, correct!,
        LinearObserver, measure, simulate, process!, make_absolute,
        make_uncertain, sample, KalmanFilter, EstimatorHistory, plot_archive,
        LeastSquaresEstimator, add!, NearestNeighborMTF, distance, mahalanobis,

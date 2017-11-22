@@ -4,7 +4,6 @@ General observers
 
 abstract type AbstractObserver{T} end
 
-
 """
 Linear observer.
 
@@ -18,7 +17,7 @@ struct LinearObserver{T<:AbstractFloat} <: AbstractObserver{T}
 
     function LinearObserver(H::Matrix{T}, R::Covariance{T}) where T
         if (size(H,1), size(H,1)) != size(R)
-            error("Incompatible size of system matrices.")
+            throw(DimensionMismatch("Incompatible size of system matrices."))
         end
         new{T}(H, R)
     end
