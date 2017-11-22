@@ -80,13 +80,13 @@ time step.
 """
 function continuous_predict_cov(A::Matrix, Q::Matrix, P::Matrix, dt)
     n = size(A,1)
-    Ap = zeros(2*n, 2*n)
-    for i = 1:2
+    Ap = zeros(n*n, n*n)
+    for i = 1:n
         shift = (i-1)*n
         @inbounds Ap[shift+1:shift+n, shift+1:shift+n] .= A
     end
-    for i = 1:2*n, j = 1:n
-        @inbounds Ap[(i-1)%2+2*j-1, i] += A[j, 1+floor(Integer, (i-1)/2)]
+    for i = 1:n*n, j = 1:n
+        @inbounds Ap[(j-1)*n + (i-1)%n + 1, i] += A[j, 1+floor(Integer,(i-1)/n)]
     end
     Ap_exp = expm(Ap*dt)
     reshape(Ap_exp*P[:] + (Ap_exp - eye(size(Ap,1)))*inv(Ap)*Q[:], size(P))
