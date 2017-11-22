@@ -22,8 +22,8 @@ StateEstimation.assert_compatibility(DiscreteState(ones(2)), lin_obs)
     DiscreteState(ones(3)))
 lin_obs = LinearObserver(ones(2)', 2.0)
 StateEstimation.assert_compatibility(DiscreteState([1.0]), lin_obs)
-@test_throws DimensionMismatch StateEstimation.assert_compatibility(lin_obs,
-    DiscreteState([1.0]))
+@test_throws DimensionMismatch StateEstimation.assert_compatibility(
+    DiscreteState(ones(2)), lin_obs)
 
 # Test discrete prediction methods
 lin_obs = LinearObserver(ones(2,2), eye(2))
