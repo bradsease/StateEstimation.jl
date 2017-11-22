@@ -56,18 +56,22 @@ forms. For discrete systems, t must be an integer.
 """
 function state_transition_matrix{T}(sys::LinearSystem{T},
                                     state::DiscreteState{T}, t::Integer)
+    assert_compatibility(sys, state)
     return sys.A^(t-state.t)
 end
 function state_transition_matrix{T}(sys::LinearSystem{T},
                                     state::UncertainDiscreteState{T},t::Integer)
+    assert_compatibility(sys, state)
     return sys.A^(t-state.t)
 end
 function state_transition_matrix{T}(sys::LinearSystem{T},
                                     state::ContinuousState{T}, t::T)
+    assert_compatibility(sys, state)
     return expm(sys.A*(t-state.t))
 end
 function state_transition_matrix{T}(sys::LinearSystem{T},
                                     state::UncertainContinuousState{T}, t::T)
+    assert_compatibility(sys, state)
     return expm(sys.A*(t-state.t))
 end
 
@@ -88,8 +92,13 @@ function continuous_predict_cov(A::Matrix, Q::Matrix, P::Matrix, dt)
     for i = 1:n*n, j = 1:n
         @inbounds Ap[(j-1)*n + (i-1)%n + 1, i] += A[j, 1+floor(Integer,(i-1)/n)]
     end
-    Ap_exp = expm(Ap*dt)
-    reshape(Ap_exp*P[:] + (Ap_exp - eye(size(Ap,1)))*inv(Ap)*Q[:], size(P))
+    if det(Ap) < eps()
+        A_exp = expm(A*dt)
+        return A_exp*P*A_exp' + dt*Q
+    else
+        Ap_exp = expm(Ap*dt)
+        reshape(Ap_exp*P[:] + (Ap_exp - eye(size(Ap,1)))*inv(Ap)*Q[:], size(P))
+    end
 end
 
 
@@ -104,6 +113,7 @@ function predict{T}(sys::LinearSystem{T}, state::AbstractAbsoluteState{T}, t)
     return out_state
 end
 function predict{T}(sys::LinearSystem{T}, state::UncertainDiscreteState{T}, t)
+    assert_compatibility(sys, state)
     out_state = deepcopy(state)
     for idx = state.t:t-1
         out_state.x .= sys.A*out_state.x
@@ -132,6 +142,7 @@ function predict!{T}(sys::LinearSystem{T}, state::AbstractAbsoluteState{T}, t)
     return nothing
 end
 function predict!{T}(sys::LinearSystem{T}, state::UncertainDiscreteState{T}, t)
+    assert_compatibility(sys, state)
     for idx = state.t:t-1
         state.x = sys.A*state.x
         state.P = sys.A*state.P*sys.A' + sys.Q
