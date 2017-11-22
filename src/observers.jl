@@ -27,12 +27,17 @@ struct LinearObserver{T<:AbstractFloat} <: AbstractObserver{T}
         new{T}(H, zeros(size(H)))
     end
 end
+LinearObserver{T<:AbstractFloat}(H::T) =
+    LinearObserver(reshape([H],1,1), zeros(1,1))
 LinearObserver{T<:AbstractFloat}(H::T, R::T) =
     LinearObserver(reshape([H],1,1), reshape([R],1,1))
 LinearObserver{T<:AbstractFloat}(H::Vector{T}, R::Covariance{T}) =
     LinearObserver(reshape(H,length(H),1), R)
 LinearObserver{T<:AbstractFloat}(H::RowVector{T}, R::T) =
     LinearObserver(Array(H), reshape([R],1,1))
+LinearObserver{T<:AbstractFloat}(H::RowVector{T}, R::Covariance{T}) =
+    LinearObserver(Array(H), R)
+
 
 """
     assert_compatibility(obs::LinearObserver{T}, state::AbstractState{T})

@@ -5,14 +5,38 @@ using Base.Test
 @test 1 == 1
 
 
-# Create linear observer
-linear_obs = LinearObserver(eye(2), eye(2))
-@test linear_obs.H == eye(2)
-@test linear_obs.R == eye(2)
+# Test constructors
+@test size(LinearObserver(ones(2,2)).H) == (2,2)
+@test size(LinearObserver(1.0).H) == (1,1)
+@test size(LinearObserver(1.0, 1.0).R) == (1,1)
+@test size(LinearObserver(eye(3), eye(3)).H) == (3,3)
+@test size(LinearObserver(ones(3), eye(3)).H) == (3,1)
+@test size(LinearObserver(ones(3)', 1.0).R) == (1,1)
+@test size(LinearObserver(ones(3)', ones(1,1)').R) == (1,1)
 
-# Predict discrete state through linear observer
-discrete_state = DiscreteState(ones(2))
-result = predict(linear_obs, discrete_state)
+# Test discrete prediction methods
+lin_obs = LinearObserver(ones(2,2), eye(2))
+@test predict(lin_obs, DiscreteState(ones(2))) == DiscreteState(2*ones(2), 0)
+@test predict(lin_obs, UncertainDiscreteState(ones(2), eye(2))) ==
+    UncertainDiscreteState(2*ones(2), lin_obs.H*lin_obs.H'+lin_obs.R, 0)
+
+# Test continuous prediction methods
+lin_obs = LinearObserver(ones(2)', 1.0)
+@test predict(lin_obs, ContinuousState(ones(2))) == ContinuousState(2.0, 0.0)
+@test predict(lin_obs, UncertainContinuousState(ones(2), eye(2))) ==
+    UncertainContinuousState(2.0*ones(1), lin_obs.H*lin_obs.H'+lin_obs.R, 0.0)
+
+# Test discrete prediction methods
+lin_obs = LinearObserver(ones(2,2), eye(2))
+@test measure(lin_obs, DiscreteState(ones(2))) == DiscreteState(2*ones(2), 0)
+@test measure(lin_obs, UncertainDiscreteState(ones(2), eye(2))) ==
+    DiscreteState(2*ones(2), 0)
+
+# Test continuous prediction methods
+lin_obs = LinearObserver(ones(2)', 1.0)
+@test measure(lin_obs, ContinuousState(ones(2))) == ContinuousState(2.0, 0.0)
+@test measure(lin_obs, UncertainContinuousState(ones(2), eye(2))) ==
+    ContinuousState(2.0*ones(1), 0.0)
 
 # Test observability methods
 linear_sys = LinearSystem(Float64[[1, -2] [-3, -4]]', 0.1*eye(2))

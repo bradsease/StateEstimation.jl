@@ -49,14 +49,14 @@ predict!(lin_sys, state, 2)
 @test state == UncertainDiscreteState(4*ones(2), eye(2)+10*ones(2,2), 2)
 
 # Test in-place continuous prediction methods
-lin_sys = LinearSystem([[0.0, 1.0] [-1.0, 0.0]], 2*eye(2))
+lin_sys = LinearSystem([[0.0, 1.0] [-1.0, 1.0]], 2*eye(2))
 state = ContinuousState(ones(2))
-predict!(lin_sys, state, 2.0)
-@test state == ContinuousState(expm(lin_sys.A*2)*ones(2), 2.0)
+predict!(lin_sys, state, 0.1)
+@test state == ContinuousState(expm(lin_sys.A*0.1)*ones(2), 0.1)
 state = UncertainContinuousState(ones(2), eye(2))
-predict!(lin_sys, state, 2.0)
-@test state.x == expm(lin_sys.A*2)*ones(2)
-@test isapprox(state.P, [[5.0, 0.0] [0.0, 5.0]], rtol=1e-6)
+predict!(lin_sys, state, 0.1)
+@test state.x == expm(lin_sys.A*0.1)*ones(2)
+@test isapprox(state.P, [[1.20075, -0.0117417] [-0.0117417, 1.44201]],rtol=1e-5)
 
 
 
