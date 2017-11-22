@@ -18,10 +18,10 @@ struct LinearSystem{T<:AbstractFloat} <: AbstractSystem{T}
 
     function LinearSystem(A::Matrix{T}, Q::Covariance{T}) where T
         if size(A) != size(Q)
-            error("Incompatible size of system matrices.")
+            throw(DimensionMismatch("Incompatible size of system matrices."))
         end
         if size(A,1) != size(A,2)
-            error("System 'A' matrix must be square.")
+            throw(DimensionMismatch("System 'A' matrix must be square."))
         end
         new{T}(A, Q)
     end
@@ -43,7 +43,7 @@ Require linear system dimensions to be compatible with input state.
 """
 function assert_compatibility{T}(sys::LinearSystem{T}, state::AbstractState{T})
     if size(sys.A, 2) != length(state.x)
-       error("Linear system incompatible with input state.")
+        throw(DimensionMismatch("Linear system incompatible with input state."))
     end
 end
 

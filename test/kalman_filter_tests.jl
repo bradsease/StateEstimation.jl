@@ -20,6 +20,7 @@ for i = 1:10
     measurement = simulate(kf)
     process!(kf, measurement)
 end
+@test_throws ArgumentError correct!(kf, DiscreteState(ones(2), 0))
 
 # Test discrete kalman filter with archiving
 srand(1);
@@ -32,6 +33,7 @@ for i = 1:10
     measurement = simulate(kf)
     process!(kf, measurement, archive)
 end
+@test_throws ArgumentError correct!(kf, DiscreteState(ones(2), 0))
 
 # Test continuous kalman filter
 srand(1);
@@ -43,6 +45,7 @@ for i = 1:10
     measurement = simulate(kf, kf.estimate.t+0.1)
     process!(kf, measurement)
 end
+@test_throws ArgumentError correct!(kf, ContinuousState(ones(3), 0.0))
 
 # Test continuous kalman filter with archiving
 srand(1);
@@ -55,3 +58,4 @@ for i = 1:10
     measurement = simulate(kf, kf.estimate.t+0.1)
     process!(kf, measurement, archive)
 end
+@test_throws ArgumentError correct!(kf, ContinuousState(ones(3), 0.0))

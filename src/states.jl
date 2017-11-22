@@ -35,13 +35,15 @@ mutable struct UncertainDiscreteState{T<:AbstractFloat} <:
     function UncertainDiscreteState(x::Vector{T}, P::Covariance{T},
         t::Int64) where T
             if length(x) != size(P)[1] || length(x) != size(P)[2]
-                error("Dimensions of covariance and state do not match.")
+                throw(DimensionMismatch(
+                    "Dimensions of covariance and state do not match."))
             end
             new{T}(x, P, t)
     end
     function UncertainDiscreteState(x::Vector{T}, P::Covariance{T}) where T
             if length(x) != size(P)[1] || length(x) != size(P)[2]
-                error("Dimensions of covariance and state do not match.")
+                throw(DimensionMismatch(
+                    "Dimensions of covariance and state do not match."))
             end
             new{T}(x, P, 0)
     end
@@ -91,13 +93,15 @@ mutable struct UncertainContinuousState{T<:AbstractFloat} <:
     function UncertainContinuousState(x::Vector{T}, P::Covariance{T},
         t::T) where T
             if length(x) != size(P)[1] || length(x) != size(P)[2]
-                error("Dimensions of covariance and state do not match.")
+                throw(DimensionMismatch(
+                    "Dimensions of covariance and state do not match."))
             end
             new{T}(x, P, t)
     end
     function UncertainContinuousState(x::Vector{T}, P::Covariance{T}) where T
             if length(x) != size(P)[1] || length(x) != size(P)[2]
-                error("Dimensions of covariance and state do not match.")
+                throw(DimensionMismatch(
+                    "Dimensions of covariance and state do not match."))
             end
             new{T}(x, P, 0.0)
     end
