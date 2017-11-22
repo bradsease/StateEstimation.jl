@@ -6,6 +6,7 @@ using Base.Test
 
 
 # Test constructors
+@test size(LinearSystem(ones(2,2)).A) == (2,2)
 @test size(LinearSystem(1.0).A) == (1,1)
 @test size(LinearSystem(1.0, 1.0).Q) == (1,1)
 @test size(LinearSystem(eye(3), eye(3)).A) == (3,3)
