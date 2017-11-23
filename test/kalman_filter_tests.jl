@@ -1,5 +1,5 @@
-using StateEstimation
-using Base.Test
+# Kalman Filter tests
+
 
 # Test construction with absolute state
 linear_sys = LinearSystem(0.5*eye(2), 0.001*eye(2))
@@ -33,7 +33,7 @@ for i = 1:10
     measurement = simulate(kf)
     process!(kf, measurement, archive)
 end
-@test_throws ArgumentError correct!(kf, DiscreteState(ones(2), 0))
+@test_throws ArgumentError correct!(kf, DiscreteState(ones(2), 0), archive)
 
 # Test continuous kalman filter
 srand(1);
@@ -58,4 +58,4 @@ for i = 1:10
     measurement = simulate(kf, kf.estimate.t+0.1)
     process!(kf, measurement, archive)
 end
-@test_throws ArgumentError correct!(kf, ContinuousState(ones(3), 0.0))
+@test_throws ArgumentError correct!(kf, ContinuousState(ones(3), 0.0), archive)

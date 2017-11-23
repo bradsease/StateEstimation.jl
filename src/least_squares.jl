@@ -41,7 +41,7 @@ function add!{T,S,M}(lse::LeastSquaresEstimator{T,S,M}, measurement::M)
     push!(lse.measurements, measurement)
     return nothing
 end
-function add!{T,S,M}(lse::LeastSquaresEstimator{T,S,M}, measurements::Vector{M})
+function add!(lse::LeastSquaresEstimator, measurements::Vector)
     for idx = 1:length(measurements)
         add!(lse, measurements[idx])
     end

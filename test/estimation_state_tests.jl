@@ -1,8 +1,4 @@
-using StateEstimation
-using Base.Test
-
-# Sanity check
-@test 1 == 1
+# State tests
 
 
 # Discrete state constructors
