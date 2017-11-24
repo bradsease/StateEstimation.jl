@@ -95,9 +95,9 @@ compute_states!(state_history::Vector, lse::LeastSquaresEstimator) =
 function solve{T}(lse::LeastSquaresEstimator{T})
     m = size(lse.obs.H, 1)
     n = length(lse.estimate.x)
-    A = zeros(n, m*length(lse.measurements))
-    b = zeros(m*length(lse.measurements))
-    C = spzeros(m*length(lse.measurements), m*length(lse.measurements))
+    A = zeros(T, n, m*length(lse.measurements))
+    b = zeros(T, m*length(lse.measurements))
+    C = spzeros(T, m*length(lse.measurements), m*length(lse.measurements))
 
     for idx = 1:length(lse.measurements)
         start_idx = (idx-1)*m + 1
