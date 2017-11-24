@@ -15,16 +15,13 @@ end
 function plot_archive{T}(archive::EstimatorHistory{T})
     t = archive.states[1].t
     data::Array{T,2} = archive.states[1].x'
-    cov::Array{T,2} = diag(chol(archive.states[1].P))'
+    cov::Array{T,2} = diag(chol(Hermitian(archive.states[1].P)))'
 
     for i = 1:length(archive.states)
         t = vcat(t, archive.states[i].t)
         data = vcat(data, archive.states[i].x')
         cov = vcat(cov, diag(chol(Hermitian(archive.states[i].P)))')
     end
-
-    #rows = min(5, length(archive.states[1].x))
-    #cols = Integer(ceil(length(archive.states[1].x)/5))
 
     scatter(t, data, markersize=1, markercolor="black",
             layout=(length(archive.states[1].x), 1), legend=false)
