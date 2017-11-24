@@ -8,7 +8,7 @@ export Estimator, SequentialEstimator, AbstractSystem, AbstractObserver,
        UncertainContinuousState, LinearSystem, predict, predict!, correct!,
        LinearObserver, measure, simulate, process!, make_absolute,
        make_uncertain, sample, KalmanFilter, EstimatorHistory, plot_archive,
-       LeastSquaresEstimator, add!, NearestNeighborMTF, distance, mahalanobis,
+       LeastSquaresEstimator, add!, distance, mahalanobis,
        AbstractState, AbstractAbsoluteState, AbstractUncertainState,
        state_transition_matrix, observable, solve, solve!
 
@@ -25,7 +25,7 @@ include("archive.jl")
 include("kalman_filter.jl")
 #include("extended_kalman_filter.jl")
 #include("unscented_kalman_filter.jl")
-include("multi_target_filter.jl")
+#include("multi_target_filter.jl")
 
 include("least_squares.jl")
 
