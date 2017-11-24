@@ -28,6 +28,7 @@ immutable KalmanFilter{T,S<:AbstractUncertainState{T}} <: AbstractKalmanFilter{T
     end
 end
 
+
 const DiscreteKalmanFilter{T} =
     KalmanFilter{T,UncertainDiscreteState{T}} where T
 const ContinuousKalmanFilter{T} =
@@ -35,38 +36,24 @@ const ContinuousKalmanFilter{T} =
 
 
 """
-    predict!(kf::KalmanFilter)
-
-Kalman filter prediction step.
-"""
-function predict!{T}(kf::KalmanFilter{T}, t)
-    predict!(kf.sys, kf.estimate, t)
-    return nothing
-end
-
-
-"""
-    correct!(kf::KalmanFilter, z::AbstractAbsoluteState)
+    process!(kf::KalmanFilter, z::AbstractAbsoluteState)
 
 Kalman filter correction step.
 """
-function correct!{T}(kf::DiscreteKalmanFilter{T}, z::DiscreteState{T})
-    if kf.estimate.t != z.t
-        throw(ArgumentError(
-            "Measurement does not correspond to current time step."))
-    end
+function process!{T}(kf::DiscreteKalmanFilter{T}, z::DiscreteState{T})
+    predict!(kf.sys, kf.estimate, z.t)
     yk = predict(kf.obs, kf.estimate)
     Kk = kf.estimate.P*kf.obs.H'*inv(yk.P)
     kf.estimate.x += Kk*(z.x - yk.x)
     kf.estimate.P -= Kk*kf.estimate.P*Kk'
     return nothing
 end
-function correct!{T}(kf::DiscreteKalmanFilter{T}, z::DiscreteState{T},
+function process!{T}(kf::DiscreteKalmanFilter{T}, z::DiscreteState{T},
                      archive::EstimatorHistory{T})
-    if kf.estimate.t != z.t
-        throw(ArgumentError(
-         "Measurement does not correspond to current time step."))
+    if length(archive.states) == 0
+        push!(archive.states, deepcopy(kf.estimate))
     end
+    predict!(kf.sys, kf.estimate, z.t)
     yk = predict(kf.obs, kf.estimate)
     residual = (z.x - yk.x)
     Kk = kf.estimate.P*kf.obs.H'*inv(yk.P)
@@ -75,50 +62,26 @@ function correct!{T}(kf::DiscreteKalmanFilter{T}, z::DiscreteState{T},
     push!(archive.residuals, UncertainDiscreteState(residual, yk.P, z.t))
     return nothing
 end
-function correct!{T}(kf::ContinuousKalmanFilter{T}, z::ContinuousState{T})
-    if kf.estimate.t != z.t
-        throw(ArgumentError(
-         "Measurement does not correspond to current time step."))
-    end
+function process!{T}(kf::ContinuousKalmanFilter{T}, z::ContinuousState{T})
+    predict!(kf.sys, kf.estimate, z.t)
     yk = predict(kf.obs, kf.estimate)
     Kk = kf.estimate.P*kf.obs.H'*inv(yk.P)
     kf.estimate.x += Kk*(z.x - yk.x)
     kf.estimate.P -= Kk*kf.estimate.P*Kk'
     return nothing
 end
-function correct!{T}(kf::ContinuousKalmanFilter{T}, z::ContinuousState{T},
+function process!{T}(kf::ContinuousKalmanFilter{T}, z::ContinuousState{T},
                      archive::EstimatorHistory{T})
-    if kf.estimate.t != z.t
-        throw(ArgumentError(
-            "Measurement does not correspond to current time step."))
+    if length(archive.states) == 0
+        push!(archive.states, deepcopy(kf.estimate))
     end
+    predict!(kf.sys, kf.estimate, z.t)
     yk = predict(kf.obs, kf.estimate)
     residual = (z.x - yk.x)
     Kk = kf.estimate.P*kf.obs.H'*inv(yk.P)
     kf.estimate.x += Kk*residual
     kf.estimate.P -= Kk*kf.estimate.P*Kk'
     push!(archive.residuals, UncertainContinuousState(residual, yk.P, z.t))
-    return nothing
-end
-
-
-
-"""
-    process!(kf::KalmanFilter)
-"""
-function process!{T}(kf::KalmanFilter{T}, z::AbstractState{T})
-    predict!(kf, z.t)
-    correct!(kf, z)
-    return nothing
-end
-function process!{T}(kf::KalmanFilter{T}, z::AbstractState{T},
-                     archive::EstimatorHistory{T})
-    if length(archive.states) == 0
-        push!(archive.states, deepcopy(kf.estimate))
-    end
-    predict!(kf, z.t)
-    correct!(kf, z, archive)
-    push!(archive.states, deepcopy(kf.estimate))
     return nothing
 end
 
@@ -130,12 +93,4 @@ Simulate next measurement for a Kalman filter.
 """
 function simulate{T}(kf::KalmanFilter{T}, t)
     return sample(predict(kf.obs, predict(kf.sys, kf.estimate, t)))
-end
-"""
-    simulate(kf::DiscreteKalmanFilter)
-
-Simulate next measurement for a discrete Kalman filter.
-"""
-function simulate{T}(kf::DiscreteKalmanFilter{T})
-    return sample(predict(kf.obs,predict(kf.sys, kf.estimate, kf.estimate.t+1)))
 end
