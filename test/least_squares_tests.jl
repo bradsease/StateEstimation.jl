@@ -49,7 +49,8 @@ for idx = 1:10
     push!(measurements, simulate(lse, idx-1))
 end
 add!(lse, measurements)
-@test distance(solve(lse), initial_est) < 0.2
+solve!(lse)
+@test distance(lse.estimate, initial_est) < 0.2
 
 
 # Test discrete-time linear least squares with archiving
@@ -64,5 +65,6 @@ for idx = 1:10
 end
 add!(lse, measurements)
 archive = EstimatorHistory()
-@test distance(solve(lse, archive), initial_est) < 0.2
+solve!(lse, archive)
+@test distance(lse.estimate, initial_est) < 0.2
 @test (length(archive.states) == 10) & (length(archive.residuals) == 10)
