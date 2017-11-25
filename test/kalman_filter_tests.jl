@@ -8,7 +8,12 @@ initial_est = DiscreteState([1.0, 2.0])
 kf = KalmanFilter(linear_sys, linear_obs, initial_est)
 @test typeof(kf.estimate) <: UncertainDiscreteState
 @test kf.estimate.P == zeros(2,2)
-#@test_throws ArgumentError correct!(kf, DiscreteState(ones(2), 10))
+
+# Test consider constructors
+kf = KalmanFilter(linear_sys, linear_obs, initial_est, [2])
+kf = KalmanFilter(linear_sys, linear_obs, make_uncertain(initial_est), [2])
+@test_throws DimensionMismatch KalmanFilter(linear_sys, linear_obs, initial_est, [3])
+@test_throws ArgumentError KalmanFilter(linear_sys, linear_obs, initial_est, [3,3])
 
 # Test discrete kalman filter
 srand(1);
@@ -20,7 +25,20 @@ for i = 1:10
     measurement = simulate(kf, i)
     process!(kf, measurement)
 end
-#@test_throws ArgumentError correct!(kf, DiscreteState(ones(2), 0))
+
+# Test discrete consider kalman filter
+srand(1);
+A = [1.0 0.5 0.01; -0.5 1.0 0.01; 0.0 0.0 1.0]
+linear_sys = LinearSystem(A, 0.001*eye(3))
+linear_obs = LinearObserver(eye(2,3), 0.01*eye(2))
+initial_est = UncertainDiscreteState([1.0, 2.0, 3.0], 0.1*eye(3))
+consider_states = [3]
+kf = KalmanFilter(linear_sys, linear_obs, initial_est, consider_states)
+for i = 1:10
+    measurement = simulate(kf, i)
+    process!(kf, measurement)
+end
+@test kf.estimate.P[3,3] == initial_est.P[3,3]
 
 # Test discrete kalman filter with archiving
 srand(1);
@@ -33,7 +51,6 @@ for i = 1:10
     measurement = simulate(kf, i)
     process!(kf, measurement, archive)
 end
-#@test_throws ArgumentError correct!(kf, DiscreteState(ones(2), 0), archive)
 
 # Test continuous kalman filter
 srand(1);
@@ -45,7 +62,6 @@ for i = 1:10
     measurement = simulate(kf, kf.estimate.t+0.1)
     process!(kf, measurement)
 end
-#@test_throws ArgumentError correct!(kf, ContinuousState(ones(3), 0.0))
 
 # Test continuous kalman filter with archiving
 srand(1);
@@ -58,4 +74,3 @@ for i = 1:10
     measurement = simulate(kf, kf.estimate.t+0.1)
     process!(kf, measurement, archive)
 end
-#@test_throws ArgumentError correct!(kf, ContinuousState(ones(3), 0.0), archive)
