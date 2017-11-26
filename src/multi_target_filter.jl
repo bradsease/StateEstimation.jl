@@ -5,19 +5,25 @@ abstract type MultiTargetFilter{T,S} <: SequentialEstimator{T,S} end
 
 
 """
-
+Multi-target filter with Nearest Neighbor data association.
 """
 immutable NearestNeighborMTF{T<:AbstractFloat, S<:AbstractState{T}} <:
                                                           MultiTargetFilter{T,S}
-    filter_bank::Vector{SequentialEstimator{T}}
+    filter_bank::Vector{SequentialEstimator{T,S}}
 
-    function NearestNeighborMTF(filter_bank::Vector{SequentialEstimator{T,S}}
-        ) where {T,S}
-        new{T,S}(filter_bank)
-    end
     function NearestNeighborMTF(filter::SequentialEstimator{T,S}) where {T,S}
         new{T,S}(Vector{SequentialEstimator{T}}([filter]))
     end
+end
+function NearestNeighborMTF(filter_bank::Vector)
+    if isempty(filter_bank)
+        throw(ArgumentError("MTF requires at least one sequential filter."))
+    end
+    new_mtf = NearestNeighborMTF(filter_bank[1])
+    for idx = 2:length(filter_bank)
+        add!(new_mtf, filter_bank[idx])
+    end
+    return new_mtf
 end
 
 
@@ -36,11 +42,19 @@ const ContinuousSequentialEstimator{T} =
     add!(mtf::MultiTargetFilter{T}, filter::SequentialEstimator{T})
 """
 function add!{T,S}(mtf::MultiTargetFilter{T,S},filter::SequentialEstimator{T,S})
+    for idx = 1:length(mtf.filter_bank)
+        if filter === mtf.filter_bank[idx]
+            throw(ArgumentError("Attempted to add duplicate filter."))
+        end
+    end
     push!(mtf.filter_bank, filter)
     return nothing
 end
+function add!(mtf::MultiTargetFilter, filter::SequentialEstimator)
+    throw(ArgumentError("Cannot mix continuous and discrete-time filters."))
+end
 """
-    add!(mtf::MultiTargetFilter{T}, filter_bank::Vector{SequentialEstimator{T}})
+    add!(mtf::MultiTargetFilter, filter_bank::Array)
 """
 function add!(mtf::MultiTargetFilter, filter_bank::Array)
     for idx = 1:length(filter_bank)
@@ -73,4 +87,19 @@ function process!{T<:AbstractFloat}(mtf::MultiTargetFilter{T},
     end
     process!(mtf.filter_bank[indmin(distances)], z)
     return nothing
+end
+
+
+"""
+    simulate(mtf::MultiTargetFilter, t)
+
+Simulate a measurement for a given time for all filters contained in a
+MultiTargetFilter instance. Returns a vector of absolute state measurements.
+"""
+function simulate(mtf::MultiTargetFilter, t)
+    measurements::Vector{AbstractAbsoluteState} = []
+    for idx = 1:length(mtf.filter_bank)
+        push!(measurements, simulate(mtf.filter_bank[idx], t))
+    end
+    return measurements
 end
