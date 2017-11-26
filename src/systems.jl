@@ -8,9 +8,23 @@ abstract type AbstractSystem{T} end
 """
 Linear system of equations.
 
-``x_k = A x_{k-1} + w``
+Discrete Form:
 
-where ``w ~ N(0, Q)``.
+    ``x_k = A x_{k-1} + w`` where ``w ~ N(0, Q)``.
+
+Continuous Form:
+
+    ``x'(t) = A x(t) + w`` where ``w ~ N(0, Q)``.
+
+Constructors:
+
+    LinearSystem(A::Matrix, Q::Covariance)
+
+    LinearSystem(A::Matrix)
+
+    LinearSystem(A::AbstractFloat)
+
+    LinearSystem(A::AbstractFloat, Q::AbstractFloat)
 """
 struct LinearSystem{T<:AbstractFloat} <: AbstractSystem{T}
     A::Matrix{T}
@@ -27,13 +41,47 @@ struct LinearSystem{T<:AbstractFloat} <: AbstractSystem{T}
     end
 
     function LinearSystem(A::Matrix{T}) where T
-        new{T}(A, zeros(size(A)))
+        new{T}(A, zeros(T, size(A)))
     end
 end
 LinearSystem{T<:AbstractFloat}(A::T) =
-    LinearSystem(reshape([A], 1, 1), zeros(1,1))
+    LinearSystem(reshape([A], 1, 1), zeros(T, 1, 1))
 LinearSystem{T<:AbstractFloat}(A::T, Q::T) =
     LinearSystem(reshape([A], 1, 1), reshape([Q], 1, 1))
+
+
+"""
+Nonlinear system of equations
+
+Discrete Form:
+
+    ``x_k = F(x_{k-1}, k) + w`` where ``w ~ N(0, Q)``.
+
+Continuous Form:
+
+    ``x'(t) = F(x(t), t) + w`` where ``w ~ N(0, Q)``.
+
+Constructors:
+
+    NonLinearSystem(F::Function, dF_dx::Function, Q::Covariance, ndim)
+
+    NonLinearSystem(F::Function, dF_dx::Function, Q::AbstractFloat, ndim)
+"""
+struct NonLinearSystem{T<:AbstractFloat} <: AbstractSystem{T}
+    F::Function
+    dF_dx::Function
+    Q::Covariance{T}
+
+    function NonLinearSystem(F::Function, dF_dx::Function, Q::Covariance{T},
+                             ndim::Integer) where T
+        if (ndim, ndim) != size(Q)
+            throw(DimensionMismatch("Incompatible size of system matrices."))
+        end
+        new{T}(F, dF_dx, Q)
+    end
+end
+NonLinearSystem(F::Function, dF_dx::Function, Q::AbstractFloat, ndim::Integer) =
+    NonLinearSystem(F, dF_dx, reshape([Q], 1, 1), ndim)
 
 
 """
@@ -107,26 +155,9 @@ end
 
 Predict a state through a linear system.
 """
-function predict{T}(sys::LinearSystem{T}, state::AbstractAbsoluteState{T}, t)
-    out_state = state_transition_matrix(sys, state, t) * state
-    out_state.t = t
-    return out_state
-end
-function predict{T}(sys::LinearSystem{T}, state::UncertainDiscreteState{T}, t)
-    assert_compatibility(sys, state)
+function predict{T}(sys::AbstractSystem{T}, state::AbstractState{T}, t)
     out_state = deepcopy(state)
-    for idx = state.t:t-1
-        out_state.x .= sys.A*out_state.x
-        out_state.P .= sys.A*out_state.P*sys.A' + sys.Q
-    end
-    out_state.t = t
-    return out_state
-end
-function predict{T}(sys::LinearSystem{T}, state::UncertainContinuousState{T}, t)
-    out_state = deepcopy(state)
-    out_state.x = state_transition_matrix(sys, state, t) * state.x
-    out_state.P = continuous_predict_cov(sys.A, sys.Q, state.P, t-state.t)
-    out_state.t = t
+    predict!(sys, out_state, t)
     return out_state
 end
 
@@ -141,7 +172,8 @@ function predict!{T}(sys::LinearSystem{T}, state::AbstractAbsoluteState{T}, t)
     state.t = t
     return nothing
 end
-function predict!{T}(sys::LinearSystem{T}, state::UncertainDiscreteState{T}, t)
+function predict!{T}(sys::LinearSystem{T}, state::UncertainDiscreteState{T},
+                     t::Integer)
     assert_compatibility(sys, state)
     for idx = state.t:t-1
         state.x = sys.A*state.x
@@ -153,6 +185,25 @@ end
 function predict!{T}(sys::LinearSystem{T}, state::UncertainContinuousState{T},t)
     state.x = state_transition_matrix(sys, state, t) * state.x
     state.P = continuous_predict_cov(sys.A, sys.Q, state.P, t-state.t)
+    state.t = t
+    return nothing
+end
+
+function predict!{T}(sys::NonLinearSystem{T}, state::DiscreteState{T},
+                     t::Integer)
+    for t_step = state.t:t-1
+        sys.F(state.x, t_step)
+    end
+    state.t = t
+    return nothing
+end
+function predict!{T}(sys::NonLinearSystem{T}, state::UncertainDiscreteState{T},
+                     t::Integer)
+    for t_step = state.t:t-1
+        sys.F(state.x, t_step)
+        jac = sys.dF_dx(state.x, t_step)
+        state.P = jac*state.P*jac' + sys.Q
+    end
     state.t = t
     return nothing
 end

@@ -1,8 +1,4 @@
-using StateEstimation
-using Base.Test
-
-# Sanity check
-@test 1 == 1
+# Sytem tests
 
 
 # Test constructors
@@ -60,6 +56,15 @@ predict!(lin_sys, state, 0.1)
 
 
 
-#
-#@inferred simulate(linear_sys, unc_discrete_state)
-#@inferred simulate(linear_sys, unc_continuous_state)
+# Test nonlinear constructors
+function discrete_nl_test(x::Vector, t) x .= x.^2; return nothing end
+discrete_nl_test_jac(x::Vector, t) = diagm(2*x)
+NonLinearSystem(discrete_nl_test, discrete_nl_test_jac, 1.0, 1)
+NonLinearSystem(discrete_nl_test, discrete_nl_test_jac, eye(2), 2)
+
+# Test nonlinear discrete prediction methods
+nonlin_sys = NonLinearSystem(discrete_nl_test, discrete_nl_test_jac, eye(3), 3)
+@test predict(nonlin_sys, UncertainDiscreteState([0.0, 1.0, 2.0], eye(3)), 1) ==
+    UncertainDiscreteState([0.0, 1.0, 4.0], diagm([1.0, 5.0, 65.0]), 1)
+@test predict(nonlin_sys, DiscreteState([0.0, 1.0, 2.0]), 1) ==
+    DiscreteState([0.0, 1.0, 4.0], 1)

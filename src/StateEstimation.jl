@@ -12,7 +12,7 @@ export
     UncertainContinuousState, make_uncertain, make_absolute,
     sample, distance, mahalanobis,
     # Systems
-    AbstractSystem, LinearSystem, predict, predict!,
+    AbstractSystem, LinearSystem, NonLinearSystem, predict, predict!,
     state_transition_matrix,
     # Observers
     AbstractObserver, LinearObserver, measure, observable,
