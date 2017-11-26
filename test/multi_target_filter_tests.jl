@@ -22,7 +22,8 @@ initial_est = UncertainContinuousState([10.0, 20.0], 0.1*eye(2))
 kf3 = KalmanFilter(linear_sys, linear_obs, initial_est)
 
 # Build MTF
-mtf = NearestNeighborMTF([kf1, kf2, kf3])
+mtf = NearestNeighborMTF([kf1])
+add!(mtf, [kf2, kf3])
 @test_throws ArgumentError NearestNeighborMTF([])
 @test_throws ArgumentError add!(mtf, kf2)
 

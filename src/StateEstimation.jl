@@ -3,14 +3,28 @@
 module StateEstimation
 
 
-export Estimator, SequentialEstimator, AbstractSystem, AbstractObserver,
-       DiscreteState, UncertainDiscreteState, ContinuousState,
-       UncertainContinuousState, LinearSystem, predict, predict!,
-       LinearObserver, measure, simulate, process!, make_absolute,
-       make_uncertain, sample, KalmanFilter, EstimatorHistory, plot_archive,
-       LeastSquaresEstimator, add!, distance, mahalanobis,
-       AbstractState, AbstractAbsoluteState, AbstractUncertainState,
-       state_transition_matrix, observable, solve, solve!, NearestNeighborMTF
+export
+    # Top-level abstract types
+    Estimator, SequentialEstimator, BatchEstimator,
+    # States
+    AbstractState, AbstractAbsoluteState, AbstractUncertainState,
+    DiscreteState, UncertainDiscreteState, ContinuousState,
+    UncertainContinuousState, make_uncertain, make_absolute,
+    sample, distance, mahalanobis,
+    # Systems
+    AbstractSystem, LinearSystem, predict, predict!,
+    state_transition_matrix,
+    # Observers
+    AbstractObserver, LinearObserver, measure, observable,
+    # Data archiving
+    EstimatorHistory, plot_archive,
+    # Kalman filters
+    AbstractKalmanFilter, KalmanFilter, simulate, process!,
+    # Least squares estimation
+    LeastSquaresEstimator, add!, solve, solve!,
+    # Multi-target filtering
+    MultiTargetFilter, NearestNeighborMTF
+
 
 abstract type Estimator end
 abstract type SequentialEstimator{T,S} <: Estimator end
