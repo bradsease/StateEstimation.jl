@@ -1,6 +1,8 @@
-"""
-General systems
-"""
+#
+# General systems
+#
+
+using DifferentialEquations
 
 abstract type AbstractSystem{T} end
 
@@ -55,11 +57,11 @@ Nonlinear system of equations
 
 Discrete Form:
 
-    ``x_k = F(x_{k-1}, k) + w`` where ``w ~ N(0, Q)``.
+    ``x_k = F(k, x_{k-1}) + w`` where ``w ~ N(0, Q)``.
 
 Continuous Form:
 
-    ``x'(t) = F(x(t), t) + w`` where ``w ~ N(0, Q)``.
+    ``x'(t) = F(t, x(t)) + w`` where ``w ~ N(0, Q)``.
 
 Constructors:
 
@@ -125,6 +127,24 @@ end
 
 
 """
+    solve_linear_system(A, x0, dt)
+    solve_linear_system(A, k, x0, dt)
+"""
+function solve_linear_system(A::AbstractMatrix, x0::AbstractVector,
+                             dt::AbstractFloat)
+    return expm(A*dt)*x0
+end
+function solve_linear_system(A::AbstractMatrix, k::AbstractVector,
+                             x0::AbstractVector, dt::AbstractFloat)
+    n = length(x0)
+    A_expanded = zeros(2*n, 2*n)
+    A_expanded[1:n, 1:n] .= A
+    A_expanded[1:n, n+1:end] .= eye(n)
+    return (expm(A_expanded*dt)*[x0; k])[1:n]
+end
+
+
+"""
     continuous_predict_cov(A::Matrix, Q::Matrix, P::Matrix, dt)
 
 Predict covariance through a continuous linear system over a designated
@@ -140,13 +160,8 @@ function continuous_predict_cov(A::Matrix, Q::Matrix, P::Matrix, dt)
     for i = 1:n*n, j = 1:n
         @inbounds Ap[(j-1)*n + (i-1)%n + 1, i] += A[j, 1+floor(Integer,(i-1)/n)]
     end
-    if det(Ap) < eps()
-        A_exp = expm(A*dt)
-        return A_exp*P*A_exp' + dt*Q
-    else
-        Ap_exp = expm(Ap*dt)
-        reshape(Ap_exp*P[:] + (Ap_exp - eye(size(Ap,1)))*inv(Ap)*Q[:], size(P))
-    end
+
+    return reshape(solve_linear_system(Ap, Q[:], P[:], dt), size(P))
 end
 
 
@@ -192,7 +207,7 @@ end
 function predict!{T}(sys::NonLinearSystem{T}, state::DiscreteState{T},
                      t::Integer)
     for t_step = state.t:t-1
-        sys.F(state.x, t_step)
+        sys.F(t_step, state.x)
     end
     state.t = t
     return nothing
@@ -200,10 +215,40 @@ end
 function predict!{T}(sys::NonLinearSystem{T}, state::UncertainDiscreteState{T},
                      t::Integer)
     for t_step = state.t:t-1
-        sys.F(state.x, t_step)
-        jac = sys.dF_dx(state.x, t_step)
+        sys.F(t_step, state.x)
+        jac = sys.dF_dx(t_step, state.x)
         state.P = jac*state.P*jac' + sys.Q
     end
+    state.t = t
+    return nothing
+end
+function predict!{T}(sys::NonLinearSystem{T}, state::ContinuousState{T}, t)
+    solution = DifferentialEquations.solve(
+        ODEProblem(sys.F, state.x, (state.t, t)), save_everystep=false)
+    state.x .= solution.u[end]
+    state.t = t
+    return nothing
+end
+function predict!{T}(sys::NonLinearSystem{T},
+                     state::UncertainContinuousState{T}, t)
+
+    n = length(state.x)
+    function combined_ode(t, x_in)
+        x = x_in[1:n]
+        P = reshape(x_in[n+1:end], n, n)
+        xdot = sys.F(t, x)
+        A = sys.dF_dx(t, x)
+        Pdot = A*P + P*A' + sys.Q
+        return [xdot; Pdot[:]]
+    end
+
+    combined_state = [state.x; state.P[:]]
+    solution = DifferentialEquations.solve(ODEProblem(
+        combined_ode, combined_state, (state.t, t)), save_everystep=false,
+        reltol=1e-8, abstol=1e-8)
+
+    state.x .= solution.u[end][1:n]
+    state.P .= reshape(solution.u[end][n+1:end], n, n)
     state.t = t
     return nothing
 end
