@@ -61,7 +61,7 @@ predict!(lin_sys, state, 0.1)
 
 
 # Test nonlinear constructors
-function discrete_nl_fcn(t, x::Vector) x .= x.^2; return nothing end
+discrete_nl_fcn(t, x::Vector) = x.^2;
 discrete_nl_jac(t, x::Vector) = diagm(2*x)
 NonLinearSystem(discrete_nl_fcn, discrete_nl_jac, 1.0, 1)
 NonLinearSystem(discrete_nl_fcn, discrete_nl_jac, eye(2), 2)

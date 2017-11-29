@@ -207,7 +207,7 @@ end
 function predict!{T}(sys::NonLinearSystem{T}, state::DiscreteState{T},
                      t::Integer)
     for t_step = state.t:t-1
-        sys.F(t_step, state.x)
+        state.x = sys.F(t_step, state.x)
     end
     state.t = t
     return nothing
@@ -215,7 +215,7 @@ end
 function predict!{T}(sys::NonLinearSystem{T}, state::UncertainDiscreteState{T},
                      t::Integer)
     for t_step = state.t:t-1
-        sys.F(t_step, state.x)
+        state.x = sys.F(t_step, state.x)
         jac = sys.dF_dx(t_step, state.x)
         state.P = jac*state.P*jac' + sys.Q
     end
@@ -231,7 +231,6 @@ function predict!{T}(sys::NonLinearSystem{T}, state::ContinuousState{T}, t)
 end
 function predict!{T}(sys::NonLinearSystem{T},
                      state::UncertainContinuousState{T}, t)
-
     n = length(state.x)
     function combined_ode(t, x_in)
         x = x_in[1:n]
