@@ -63,11 +63,11 @@ predict!(lin_sys, state, 0.1)
 # Test nonlinear constructors
 discrete_nl_fcn(t, x::Vector) = x.^2;
 discrete_nl_jac(t, x::Vector) = diagm(2*x)
-NonLinearSystem(discrete_nl_fcn, discrete_nl_jac, 1.0, 1)
-NonLinearSystem(discrete_nl_fcn, discrete_nl_jac, eye(2), 2)
+NonlinearSystem(discrete_nl_fcn, discrete_nl_jac, 1.0, 1)
+NonlinearSystem(discrete_nl_fcn, discrete_nl_jac, eye(2), 2)
 
 # Test nonlinear discrete prediction methods
-nonlin_sys = NonLinearSystem(discrete_nl_fcn, discrete_nl_jac, eye(3), 3)
+nonlin_sys = NonlinearSystem(discrete_nl_fcn, discrete_nl_jac, eye(3), 3)
 @test predict(nonlin_sys, UncertainDiscreteState([0.0, 1.0, 2.0], eye(3)), 1) ==
     UncertainDiscreteState([0.0, 1.0, 4.0], diagm([1.0, 5.0, 65.0]), 1)
 @test predict(nonlin_sys, DiscreteState([0.0, 1.0, 2.0]), 1) ==
@@ -76,7 +76,7 @@ nonlin_sys = NonLinearSystem(discrete_nl_fcn, discrete_nl_jac, eye(3), 3)
 # Test nonlinear continuous prediction methods
 continuous_nl_fcn(t, x::Vector) = [x[2], 0.0]
 continuous_nl_jac(t, x::Vector) = [0.0 1.0; 0.0 0.0]
-nonlin_sys = NonLinearSystem(continuous_nl_fcn, continuous_nl_jac, eye(2), 2)
+nonlin_sys = NonlinearSystem(continuous_nl_fcn, continuous_nl_jac, eye(2), 2)
 @test isapprox(predict(nonlin_sys,  ContinuousState([0.0, 1.0]), 2).x,
     ContinuousState([2.0, 1.0], 2.0).x)
 

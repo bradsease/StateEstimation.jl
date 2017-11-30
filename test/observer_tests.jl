@@ -50,3 +50,11 @@ linear_sys = LinearSystem(Float64[[1, -2] [-3, -4]]', 0.1*eye(2))
 linear_obs = LinearObserver(reshape(Float64[1, 2], 1, 2), reshape([0.1], 1, 1))
 @test observable(linear_sys, linear_obs) == false
 @test observable(eye(2), eye(2))
+
+
+
+# Test nonlinear constructors
+discrete_nl_fcn(t, x::Vector) = x.^2;
+discrete_nl_jac(t, x::Vector) = diagm(2*x)
+NonlinearObserver(discrete_nl_fcn, discrete_nl_jac, eye(2))
+NonlinearObserver(discrete_nl_fcn, discrete_nl_jac, 1.0)

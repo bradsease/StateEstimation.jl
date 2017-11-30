@@ -65,16 +65,16 @@ Continuous Form:
 
 Constructors:
 
-    NonLinearSystem(F::Function, dF_dx::Function, Q::Covariance, ndim)
+    NonlinearSystem(F::Function, dF_dx::Function, Q::Covariance, ndim)
 
-    NonLinearSystem(F::Function, dF_dx::Function, Q::AbstractFloat, ndim)
+    NonlinearSystem(F::Function, dF_dx::Function, Q::AbstractFloat, ndim)
 """
-struct NonLinearSystem{T<:AbstractFloat} <: AbstractSystem{T}
+struct NonlinearSystem{T<:AbstractFloat} <: AbstractSystem{T}
     F::Function
     dF_dx::Function
     Q::Covariance{T}
 
-    function NonLinearSystem(F::Function, dF_dx::Function, Q::Covariance{T},
+    function NonlinearSystem(F::Function, dF_dx::Function, Q::Covariance{T},
                              ndim::Integer) where T
         if (ndim, ndim) != size(Q)
             throw(DimensionMismatch("Incompatible size of system matrices."))
@@ -82,8 +82,8 @@ struct NonLinearSystem{T<:AbstractFloat} <: AbstractSystem{T}
         new{T}(F, dF_dx, Q)
     end
 end
-NonLinearSystem(F::Function, dF_dx::Function, Q::AbstractFloat, ndim::Integer) =
-    NonLinearSystem(F, dF_dx, reshape([Q], 1, 1), ndim)
+NonlinearSystem(F::Function, dF_dx::Function, Q::AbstractFloat, ndim::Integer) =
+    NonlinearSystem(F, dF_dx, reshape([Q], 1, 1), ndim)
 
 
 """
@@ -204,7 +204,7 @@ function predict!{T}(sys::LinearSystem{T}, state::UncertainContinuousState{T},t)
     return nothing
 end
 
-function predict!{T}(sys::NonLinearSystem{T}, state::DiscreteState{T},
+function predict!{T}(sys::NonlinearSystem{T}, state::DiscreteState{T},
                      t::Integer)
     for t_step = state.t:t-1
         state.x = sys.F(t_step, state.x)
@@ -212,7 +212,7 @@ function predict!{T}(sys::NonLinearSystem{T}, state::DiscreteState{T},
     state.t = t
     return nothing
 end
-function predict!{T}(sys::NonLinearSystem{T}, state::UncertainDiscreteState{T},
+function predict!{T}(sys::NonlinearSystem{T}, state::UncertainDiscreteState{T},
                      t::Integer)
     for t_step = state.t:t-1
         state.x = sys.F(t_step, state.x)
@@ -222,14 +222,14 @@ function predict!{T}(sys::NonLinearSystem{T}, state::UncertainDiscreteState{T},
     state.t = t
     return nothing
 end
-function predict!{T}(sys::NonLinearSystem{T}, state::ContinuousState{T}, t)
+function predict!{T}(sys::NonlinearSystem{T}, state::ContinuousState{T}, t)
     solution = DifferentialEquations.solve(
         ODEProblem(sys.F, state.x, (state.t, t)), save_everystep=false)
     state.x .= solution.u[end]
     state.t = t
     return nothing
 end
-function predict!{T}(sys::NonLinearSystem{T},
+function predict!{T}(sys::NonlinearSystem{T},
                      state::UncertainContinuousState{T}, t)
     n = length(state.x)
     function combined_ode(t, x_in)

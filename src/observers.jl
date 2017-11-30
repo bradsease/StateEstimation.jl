@@ -39,6 +39,31 @@ LinearObserver{T<:AbstractFloat}(H::RowVector{T}, R::Covariance{T}) =
 
 
 """
+Nonlinear observer.
+
+    ``y_k = H(k, x_{k-1}) + v`` where ``v ~ N(0, R)``.
+
+Constructors:
+
+    NonlinearObserver(H::Function, dH_dx::Function, R::Covariance, ndim)
+
+    NonlinearObserver(H::Function, dH_dx::Function, R::AbstractFloat, ndim)
+"""
+struct NonlinearObserver{T<:AbstractFloat} <: AbstractObserver{T}
+    H::Function
+    dH_dx::Function
+    R::Covariance{T}
+
+    function NonlinearObserver(H::Function, dH_dx::Function,
+                               R::Covariance{T}) where T
+        new{T}(H, dH_dx, R)
+    end
+end
+NonlinearObserver(H::Function, dH_dx::Function, R::AbstractFloat) =
+    NonlinearObserver(H, dH_dx, reshape([R], 1, 1))
+
+
+"""
     assert_compatibility(obs::LinearObserver{T}, state::AbstractState{T})
 
 Require linear observer dimensions to be compatible with input state.

@@ -12,10 +12,10 @@ export
     UncertainContinuousState, make_uncertain, make_absolute,
     sample, distance, mahalanobis,
     # Systems
-    AbstractSystem, LinearSystem, NonLinearSystem, predict, predict!,
+    AbstractSystem, LinearSystem, NonlinearSystem, predict, predict!,
     state_transition_matrix,
     # Observers
-    AbstractObserver, LinearObserver, measure, observable,
+    AbstractObserver, LinearObserver, NonlinearObserver, measure, observable,
     # Data archiving
     EstimatorHistory, plot_archive,
     # Kalman filters
