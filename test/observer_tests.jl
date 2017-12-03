@@ -33,13 +33,13 @@ lin_obs = LinearObserver(ones(2)', 1.0)
 @test predict(lin_obs, UncertainContinuousState(ones(2), eye(2))) ==
     UncertainContinuousState(2.0*ones(1), lin_obs.H*lin_obs.H'+lin_obs.R, 0.0)
 
-# Test discrete prediction methods
+# Test discrete measure methods
 lin_obs = LinearObserver(ones(2,2), eye(2))
 @test measure(lin_obs, DiscreteState(ones(2))) == DiscreteState(2*ones(2), 0)
 @test measure(lin_obs, UncertainDiscreteState(ones(2), eye(2))) ==
     DiscreteState(2*ones(2), 0)
 
-# Test continuous prediction methods
+# Test continuous measure methods
 lin_obs = LinearObserver(ones(2)', 1.0)
 @test measure(lin_obs, ContinuousState(ones(2))) == ContinuousState(2.0, 0.0)
 @test measure(lin_obs, UncertainContinuousState(ones(2), eye(2))) ==
@@ -58,3 +58,28 @@ discrete_nl_fcn(t, x::Vector) = x.^2;
 discrete_nl_jac(t, x::Vector) = diagm(2*x)
 NonlinearObserver(discrete_nl_fcn, discrete_nl_jac, eye(2))
 NonlinearObserver(discrete_nl_fcn, discrete_nl_jac, 1.0)
+
+# Test nonlinear absolute state prediction methods
+nonlin_obs = NonlinearObserver(discrete_nl_fcn, discrete_nl_jac, eye(3))
+@test predict(nonlin_obs, DiscreteState([0.0, 1.0, 2.0])) ==
+    DiscreteState([0.0, 1.0, 4.0], 0)
+@test predict(nonlin_obs, ContinuousState([0.0, 2.0, 4.0], 1.0)) ==
+    ContinuousState([0.0, 4.0, 16.0], 1.0)
+
+# Test nonlinear uncertain state prediction methods
+@test predict(nonlin_obs, UncertainDiscreteState([0.0, 1.0, 2.0], eye(3))) ==
+    UncertainDiscreteState([0.0, 1.0, 4.0], diagm([1.0, 5.0, 17.0]), 0)
+@test predict(nonlin_obs, UncertainContinuousState([0.0, 1.0, 2.0], eye(3))) ==
+    UncertainContinuousState([0.0, 1.0, 4.0], diagm([1.0, 5.0, 17.0]), 0.0)
+
+# Test nonlinear discrete measure methods
+@test measure(nonlin_obs, DiscreteState([0.0, 1.0, 2.0])) ==
+    DiscreteState([0.0, 1.0, 4.0], 0)
+@test measure(nonlin_obs, UncertainDiscreteState([0.0, 1.0, 2.0], eye(3))) ==
+    measure(nonlin_obs, DiscreteState([0.0, 1.0, 2.0]))
+
+# Test nonlinear continuous measure methods
+@test measure(nonlin_obs, ContinuousState([0.0, 1.0, 2.0])) ==
+    ContinuousState([0.0, 1.0, 4.0], 0.0)
+@test measure(nonlin_obs, UncertainContinuousState([0.0, 1.0, 2.0], eye(3))) ==
+    measure(nonlin_obs, ContinuousState([0.0, 1.0, 2.0]))
