@@ -1,6 +1,6 @@
-"""
-Kalman Filter Types and Methods
-"""
+#
+# Kalman Filter Types and Methods
+#
 
 abstract type AbstractKalmanFilter{T,S} <: SequentialEstimator{T,S} end
 

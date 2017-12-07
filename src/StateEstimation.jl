@@ -19,7 +19,8 @@ export
     # Data archiving
     EstimatorHistory, plot_archive,
     # Kalman filters
-    AbstractKalmanFilter, KalmanFilter, simulate, process!,
+    AbstractKalmanFilter, KalmanFilter, ExtendedKalmanFilter, simulate,
+    process!,
     # Least squares estimation
     LeastSquaresEstimator, add!, solve, solve!,
     # Multi-target filtering
@@ -37,7 +38,7 @@ include("observers.jl")
 include("archive.jl")
 
 include("kalman_filter.jl")
-#include("extended_kalman_filter.jl")
+include("extended_kalman_filter.jl")
 #include("unscented_kalman_filter.jl")
 include("multi_target_filter.jl")
 

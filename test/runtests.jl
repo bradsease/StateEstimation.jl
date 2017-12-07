@@ -7,6 +7,7 @@ include("system_tests.jl")
 include("observer_tests.jl")
 
 include("kalman_filter_tests.jl")
+include("extended_kalman_filter_tests.jl")
 include("multi_target_filter_tests.jl")
 
 include("least_squares_tests.jl")

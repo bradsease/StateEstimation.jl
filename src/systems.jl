@@ -87,15 +87,16 @@ NonlinearSystem(F::Function, dF_dx::Function, Q::AbstractFloat, ndim::Integer) =
 
 
 """
-    assert_compatibility(sys::LinearSystem{T}, state::AbstractState{T})
+    assert_compatibility(sys::AbstractSystem{T}, state::AbstractState{T})
 
-Require linear system dimensions to be compatible with input state.
+Require system dimensions to be compatible with input state.
 """
-function assert_compatibility{T}(sys::LinearSystem{T}, state::AbstractState{T})
+function assert_compatibility{T}(sys::LinearSystem{T},state::AbstractState{T})
     if size(sys.A, 2) != length(state.x)
         throw(DimensionMismatch("Linear system incompatible with input state."))
     end
 end
+
 
 """
     state_transition_matrix(sys::LinearSystem{T}, state::AbstractState{T}, t)
