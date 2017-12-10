@@ -69,18 +69,19 @@ const ContinuousEKF{T} =
 #         reset_consider_states!(prev_estimate, kf.estimate, kf.consider_states)
 #     end
 # end
-#
-#
-# """
-#     process!(kf::KalmanFilter, zk::AbstractAbsoluteState)
-#
-# Kalman filter correction step.
-# """
-# function process!{T}(kf::DiscreteKalmanFilter{T}, zk::DiscreteState{T})
-#     predict!(kf.sys, kf.estimate, zk.t)
-#     kalman_update!(kf, kf.obs.H, predict(kf.obs, kf.estimate), zk)
-#     return nothing
-# end
+
+
+"""
+    process!(ekf::ExtendedKalmanFilter, zk::AbstractAbsoluteState)
+
+Extended Kalman filter correction step.
+"""
+function process!{T}(ekf::DiscreteEKF{T}, zk::DiscreteState{T})
+    predict!(ekf.sys, ekf.estimate, zk.t)
+    kalman_update!(ekf, ekf.obs.dH_dx(zk.t, ekf.estimate.x),
+                   predict(ekf.obs, ekf.estimate), zk)
+    return nothing
+end
 # function process!{T}(kf::DiscreteKalmanFilter{T}, zk::DiscreteState{T},
 #                      archive::EstimatorHistory{T})
 #     predict!(kf.sys, kf.estimate, zk.t)
@@ -112,13 +113,16 @@ const ContinuousEKF{T} =
 #     push!(archive.residuals, UncertainContinuousState(zk.x - yk.x, yk.P, zk.t))
 #     return nothing
 # end
-#
-#
-# """
-#     simulate(kf::KalmanFilter, t)
-#
-# Simulate next measurement for a Kalman filter.
-# """
-# function simulate{T}(kf::KalmanFilter{T}, t)
-#     return sample(predict(kf.obs, predict(kf.sys, kf.estimate, t)))
-# end
+
+
+"""
+    simulate(kf::ExtendedKalmanFilter, t)
+
+Simulate next measurement for an Extended Kalman filter.
+
+TODO: Implement more accurate approach. This method is only a linear
+approximation.
+"""
+function simulate(ekf::ExtendedKalmanFilter, t)
+    return sample(predict(ekf.obs, predict(ekf.sys, ekf.estimate, t)))
+end

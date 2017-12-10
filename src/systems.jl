@@ -169,7 +169,7 @@ end
 """
     predict(sys::LinearSystem{T}, state::AbstractState{T})
 
-Predict a state through a linear system.
+Predict a state through a system.
 """
 function predict{T}(sys::AbstractSystem{T}, state::AbstractState{T}, t)
     out_state = deepcopy(state)
@@ -181,7 +181,7 @@ end
 """
     predict!(sys::LinearSystem{T}, state::AbstractState{T})
 
-In-place prediction of a state through a linear system.
+In-place prediction of a state through a system.
 """
 function predict!{T}(sys::LinearSystem{T}, state::AbstractAbsoluteState{T}, t)
     state .= state_transition_matrix(sys, state, t) * state
