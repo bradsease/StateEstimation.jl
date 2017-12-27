@@ -54,20 +54,13 @@ const ContinuousEKF{T} =
 
 
 """
-    kalman_update!(kf, H, yk, zk)
+    kalman_predict(kf::KalmanFilter, t)
 """
-function kalman_update!(ekf::ExtendedKalmanFilter, yk::AbstractUncertainState,
-                        zk::AbstractState)
-    Kk = ekf.estimate.P*ekf.obs.dH_dx(zk.t, ekf.estimate.x)'*inv(yk.P)
-    if isempty(ekf.consider_states)
-        ekf.estimate.x += Kk*(zk.x - yk.x)
-        ekf.estimate.P -= Kk*yk.P*Kk'
-    else
-        prev_estimate = deepcopy(ekf.estimate)
-        ekf.estimate.x += Kk*(zk.x - yk.x)
-        ekf.estimate.P -= Kk*yk.P*Kk'
-        reset_consider_states!(prev_estimate, ekf.estimate, ekf.consider_states)
-    end
+function kalman_predict(ekf::ExtendedKalmanFilter, t)
+    xk = predict(ekf.sys, ekf.estimate, t)
+    yk = predict(ekf.obs, xk)
+    Pxy = xk.P * ekf.obs.dH_dx(t, ekf.estimate.x)'
+    return xk, yk, Pxy
 end
 
 
