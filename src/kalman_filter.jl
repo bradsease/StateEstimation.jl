@@ -4,6 +4,10 @@
 
 abstract type AbstractKalmanFilter{T,S} <: SequentialEstimator{T,S} end
 
+const AbstractDiscreteKalmanFilter{T} =
+    AbstractKalmanFilter{T,UncertainDiscreteState{T}} where T
+const AbstractContinuousKalmanFilter{T} =
+    AbstractKalmanFilter{T,UncertainContinuousState{T}} where T
 
 """
 Standard Kalman Filter type
@@ -57,9 +61,9 @@ const ContinuousKalmanFilter{T} =
 """
     kalman_update!(kf, H, yk, zk)
 """
-function kalman_update!(kf::AbstractKalmanFilter, H::Matrix,
-                        yk::AbstractUncertainState, zk::AbstractState)
-    Kk = kf.estimate.P*H'*inv(yk.P)
+function kalman_update!(kf::KalmanFilter, yk::AbstractUncertainState,
+                        zk::AbstractState)
+    Kk = kf.estimate.P*kf.obs.H'*inv(yk.P)
     if isempty(kf.consider_states)
         kf.estimate.x += Kk*(zk.x - yk.x)
         kf.estimate.P -= Kk*yk.P*Kk'
@@ -88,16 +92,16 @@ end
 
 Kalman filter correction step.
 """
-function process!{T}(kf::DiscreteKalmanFilter{T}, zk::DiscreteState{T})
+function process!{T}(kf::AbstractDiscreteKalmanFilter{T}, zk::DiscreteState{T})
     predict!(kf.sys, kf.estimate, zk.t)
-    kalman_update!(kf, kf.obs.H, predict(kf.obs, kf.estimate), zk)
+    kalman_update!(kf, predict(kf.obs, kf.estimate), zk)
     return nothing
 end
-function process!{T}(kf::DiscreteKalmanFilter{T}, zk::DiscreteState{T},
+function process!{T}(kf::AbstractDiscreteKalmanFilter{T}, zk::DiscreteState{T},
                      archive::EstimatorHistory{T})
     predict!(kf.sys, kf.estimate, zk.t)
     yk = predict(kf.obs, kf.estimate)
-    kalman_update!(kf, kf.obs.H, yk, zk)
+    kalman_update!(kf, yk, zk)
 
     if length(archive.states) == 0
         push!(archive.states, deepcopy(kf.estimate))
@@ -106,16 +110,16 @@ function process!{T}(kf::DiscreteKalmanFilter{T}, zk::DiscreteState{T},
     push!(archive.residuals, UncertainDiscreteState(zk.x - yk.x, yk.P, zk.t))
     return nothing
 end
-function process!{T}(kf::ContinuousKalmanFilter{T}, zk::ContinuousState{T})
+function process!{T}(kf::AbstractContinuousKalmanFilter{T}, zk::ContinuousState{T})
     predict!(kf.sys, kf.estimate, zk.t)
-    kalman_update!(kf, kf.obs.H, predict(kf.obs, kf.estimate), zk)
+    kalman_update!(kf, predict(kf.obs, kf.estimate), zk)
     return nothing
 end
-function process!{T}(kf::ContinuousKalmanFilter{T}, zk::ContinuousState{T},
+function process!{T}(kf::AbstractContinuousKalmanFilter{T}, zk::ContinuousState{T},
                      archive::EstimatorHistory{T})
     predict!(kf.sys, kf.estimate, zk.t)
     yk = predict(kf.obs, kf.estimate)
-    kalman_update!(kf, kf.obs.H, yk, zk)
+    kalman_update!(kf, yk, zk)
 
     if length(archive.states) == 0
         push!(archive.states, deepcopy(kf.estimate))
