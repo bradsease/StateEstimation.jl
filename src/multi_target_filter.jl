@@ -93,13 +93,12 @@ end
 """
     simulate(mtf::MultiTargetFilter, t)
 
-Simulate a measurement for a given time for all filters contained in a
-MultiTargetFilter instance. Returns a vector of absolute state measurements.
+LOW-ACCURACY SIMULATOR. TO BE REMOVED.
 """
-function simulate(mtf::MultiTargetFilter, t)
+function inaccurate_simulate(mtf::MultiTargetFilter, t)
     measurements::Vector{AbstractAbsoluteState} = []
     for idx = 1:length(mtf.filter_bank)
-        push!(measurements, simulate(mtf.filter_bank[idx], t))
+        push!(measurements, inaccurate_simulate(mtf.filter_bank[idx], t))
     end
     return measurements
 end

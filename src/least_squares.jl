@@ -135,13 +135,3 @@ function solve!{T}(lse::LeastSquaresEstimator{T}, archive::EstimatorHistory{T})
     lse.estimate .= solve(lse, archive)
     return nothing
 end
-
-
-"""
-    simulate(lse::LeastSquaresEstimator, t)
-
-Simulate a measurement for a pre-configured LeastSquaresEstimator.
-"""
-function simulate{T}(lse::LeastSquaresEstimator{T}, t)
-    return sample(predict(lse.obs, predict(lse.sys, lse.estimate, t)))
-end

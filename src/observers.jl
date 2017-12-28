@@ -151,32 +151,26 @@ end
 
 
 """
-    measure(obs::LinearObserver{T}, state::AbstractState{T})
+   simulate(obs::LinearObserver{T}, state::AbstractState{T})
 
-Construct a measurement of an input state from a linear observer.
+Simulate a state observation.
 """
-function measure{T}(obs::LinearObserver{T}, state::DiscreteState{T})
-    return DiscreteState(obs.H*state.x, state.t)
+function simulate{T}(obs::LinearObserver{T}, state::AbstractAbsoluteState{T})
+   return sample(predict(obs, make_uncertain(state)))
 end
-function measure{T}(obs::LinearObserver{T}, state::UncertainDiscreteState{T})
-    return DiscreteState(obs.H*state.x, state.t)
+function simulate{T}(obs::LinearObserver{T}, state::AbstractUncertainState{T})
+   return sample(predict(obs, state))
 end
-function measure{T}(obs::LinearObserver{T}, state::ContinuousState{T})
-    return ContinuousState(obs.H*state.x, state.t)
-end
-function measure{T}(obs::LinearObserver{T}, state::UncertainContinuousState{T})
-    return ContinuousState(obs.H*state.x, state.t)
-end
-function measure{T}(obs::NonlinearObserver{T}, state::DiscreteState{T})
-    return DiscreteState(obs.H(state.t, state.x), state.t)
-end
-function measure{T}(obs::NonlinearObserver{T}, state::UncertainDiscreteState{T})
-    return DiscreteState(obs.H(state.t, state.x), state.t)
-end
-function measure{T}(obs::NonlinearObserver{T}, state::ContinuousState{T})
-    return ContinuousState(obs.H(state.t, state.x), state.t)
-end
-function measure{T}(obs::NonlinearObserver{T},
-                    state::UncertainContinuousState{T})
-    return ContinuousState(obs.H(state.t, state.x), state.t)
+
+
+"""
+    simulate(sys::AbstractSystem, obs::AbstractObserver, state::AbstractState, t)
+
+Simulate a combined state prediction and observation.
+"""
+function simulate{T}(sys::AbstractSystem{T}, obs::AbstractObserver{T},
+                     state::AbstractState{T}, t)
+   simulated_state = simulate(sys, state, t)
+   simulated_measurement = simulate(obs, simulated_state)
+   return simulated_state, simulated_measurement
 end

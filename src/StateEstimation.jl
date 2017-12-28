@@ -15,12 +15,12 @@ export
     AbstractSystem, LinearSystem, NonlinearSystem, predict, predict!,
     state_transition_matrix,
     # Observers
-    AbstractObserver, LinearObserver, NonlinearObserver, measure, observable,
+    AbstractObserver, LinearObserver, NonlinearObserver, observable,
     # Data archiving
     EstimatorHistory, plot_archive,
     # Kalman filters
     AbstractKalmanFilter, KalmanFilter, ExtendedKalmanFilter, simulate,
-    process!,
+    process!, inaccurate_simulate,
     # Least squares estimation
     LeastSquaresEstimator, add!, solve, solve!,
     # Multi-target filtering

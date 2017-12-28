@@ -147,8 +147,8 @@ end
 """
     simulate(kf::KalmanFilter, t)
 
-Simulate next measurement for a Kalman filter.
+LOW-ACCURACY SIMULATOR. TO BE REMOVED.
 """
-function simulate{T}(kf::KalmanFilter{T}, t)
+function inaccurate_simulate{T}(kf::KalmanFilter{T}, t)
     return sample(predict(kf.obs, predict(kf.sys, kf.estimate, t)))
 end

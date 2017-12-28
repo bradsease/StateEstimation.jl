@@ -20,9 +20,10 @@ srand(1);
 linear_sys = LinearSystem(0.5*eye(2), 0.001*eye(2))
 linear_obs = LinearObserver(eye(2), 0.001*eye(2))
 initial_est = UncertainDiscreteState([1.0, 2.0], 0.1*eye(2))
+true_state = initial_est
 kf = KalmanFilter(linear_sys, linear_obs, initial_est)
 for i = 1:10
-    measurement = simulate(kf, i)
+    true_state, measurement = simulate(kf.sys, kf.obs, true_state, i)
     process!(kf, measurement)
 end
 
@@ -32,10 +33,11 @@ A = [1.0 0.5 0.01; -0.5 1.0 0.01; 0.0 0.0 1.0]
 linear_sys = LinearSystem(A, 0.001*eye(3))
 linear_obs = LinearObserver(eye(2,3), 0.01*eye(2))
 initial_est = UncertainDiscreteState([1.0, 2.0, 3.0], 0.1*eye(3))
+true_state = initial_est
 consider_states = [3]
 kf = KalmanFilter(linear_sys, linear_obs, initial_est, consider_states)
 for i = 1:10
-    measurement = simulate(kf, i)
+    true_state, measurement = simulate(kf.sys, kf.obs, true_state, i)
     process!(kf, measurement)
 end
 @test kf.estimate.P[3,3] == initial_est.P[3,3]
@@ -45,10 +47,11 @@ srand(1);
 linear_sys = LinearSystem(0.5*eye(2), 0.001*eye(2))
 linear_obs = LinearObserver(eye(2), 0.001*eye(2))
 initial_est = UncertainDiscreteState([1.0, 2.0], 0.1*eye(2))
+true_state = initial_est
 kf = KalmanFilter(linear_sys, linear_obs, initial_est)
 archive = EstimatorHistory()
 for i = 1:10
-    measurement = simulate(kf, i)
+    true_state, measurement = simulate(kf.sys, kf.obs, true_state, i)
     process!(kf, measurement, archive)
 end
 
@@ -57,9 +60,11 @@ srand(1);
 linear_sys = LinearSystem(-eye(3), 0.001*eye(3))
 linear_obs = LinearObserver(eye(3), 0.001*eye(3))
 initial_est = UncertainContinuousState([1.0, 2.0, 3.0], 0.1*eye(3))
+true_state = initial_est
 kf = KalmanFilter(linear_sys, linear_obs, initial_est)
 for i = 1:10
-    measurement = simulate(kf, kf.estimate.t+0.1)
+    true_state, measurement = simulate(kf.sys, kf.obs, true_state,
+                                       kf.estimate.t+0.1)
     process!(kf, measurement)
 end
 
@@ -68,9 +73,11 @@ srand(1);
 linear_sys = LinearSystem(-eye(3), 0.001*eye(3))
 linear_obs = LinearObserver(eye(3), 0.001*eye(3))
 initial_est = UncertainContinuousState([1.0, 2.0, 3.0], 0.1*eye(3))
+true_state = initial_est
 kf = KalmanFilter(linear_sys, linear_obs, initial_est)
 archive = EstimatorHistory()
 for i = 1:10
-    measurement = simulate(kf, kf.estimate.t+0.1)
+    true_state, measurement = simulate(kf.sys, kf.obs, true_state,
+                                       kf.estimate.t+0.1)
     process!(kf, measurement, archive)
 end

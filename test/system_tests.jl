@@ -58,6 +58,12 @@ predict!(lin_sys, state, 0.1)
 @test state.x == expm(lin_sys.A*0.1)*ones(2)
 @test isapprox(state.P, [[1.20075, -0.0117417] [-0.0117417, 1.44201]],rtol=1e-5)
 
+# Test simulation methods
+lin_sys = LinearSystem([[0.0, 1.0] [-1.0, 1.0]], 2*eye(2))
+continuous_state = ContinuousState(ones(2))
+uncertain_discrete_state = UncertainDiscreteState(ones(2), eye(2))
+@test typeof(simulate(lin_sys, continuous_state, 1.0)) <: ContinuousState
+@test typeof(simulate(lin_sys, uncertain_discrete_state, 1)) <: DiscreteState
 
 
 # Test nonlinear constructors

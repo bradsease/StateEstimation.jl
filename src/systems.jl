@@ -167,9 +167,9 @@ end
 
 
 """
-    predict(sys::LinearSystem{T}, state::AbstractState{T})
+    predict(sys::AbstractSystem{T}, state::AbstractState{T})
 
-Predict a state through a system.
+Predict a state through an arbitrary system.
 """
 function predict{T}(sys::AbstractSystem{T}, state::AbstractState{T}, t)
     out_state = deepcopy(state)
@@ -179,9 +179,9 @@ end
 
 
 """
-    predict!(sys::LinearSystem{T}, state::AbstractState{T})
+    predict!(sys::AbstractSystem{T}, state::AbstractState{T})
 
-In-place prediction of a state through a system.
+In-place prediction of a state through an arbitrary system.
 """
 function predict!{T}(sys::LinearSystem{T}, state::AbstractAbsoluteState{T}, t)
     state .= state_transition_matrix(sys, state, t) * state
@@ -204,7 +204,6 @@ function predict!{T}(sys::LinearSystem{T}, state::UncertainContinuousState{T},t)
     state.t = t
     return nothing
 end
-
 function predict!{T}(sys::NonlinearSystem{T}, state::DiscreteState{T},
                      t::Integer)
     for t_step = state.t:t-1
@@ -255,9 +254,14 @@ end
 
 
 
-#"""
-#    simulate(sys::LinearSystem{T}, state::AbstractUncertainState{T})
-#"""
-#function simulate{T}(sys::LinearSystem{T}, state::AbstractUncertainState{T})
-#    return sample(predict(sys, state))
-#end
+"""
+   simulate(sys::LinearSystem{T}, state::AbstractState{T}, t)
+
+Simulate a state prediction.
+"""
+function simulate{T}(sys::LinearSystem{T}, state::AbstractAbsoluteState{T}, t)
+   return sample(predict(sys, make_uncertain(state), t))
+end
+function simulate{T}(sys::LinearSystem{T}, state::AbstractUncertainState{T}, t)
+   return sample(predict(sys, state, t))
+end
