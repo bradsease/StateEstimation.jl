@@ -151,15 +151,18 @@ end
 
 
 """
-   simulate(obs::LinearObserver{T}, state::AbstractState{T})
+   simulate(obs::AbstractObserver, state::AbstractState)
 
 Simulate a state observation.
 """
-function simulate{T}(obs::LinearObserver{T}, state::AbstractAbsoluteState{T})
-   return sample(predict(obs, make_uncertain(state)))
+function simulate{T}(obs::AbstractObserver{T}, state::AbstractAbsoluteState{T})
+    return simulate(obs, make_uncertain(state))
 end
 function simulate{T}(obs::LinearObserver{T}, state::AbstractUncertainState{T})
-   return sample(predict(obs, state))
+    return sample(predict(obs, state))
+end
+function simulate{T}(obs::NonlinearObserver{T},state::AbstractUncertainState{T})
+    return sample(predict(obs, make_uncertain(sample(state))))
 end
 
 

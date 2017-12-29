@@ -255,13 +255,22 @@ end
 
 
 """
-   simulate(sys::LinearSystem{T}, state::AbstractState{T}, t)
+   simulate(sys::AbstractSystem{T}, state::AbstractState{T}, t)
 
-Simulate a state prediction.
+Simulate a state prediction with initial state error and process noise.
 """
-function simulate{T}(sys::LinearSystem{T}, state::AbstractAbsoluteState{T}, t)
-   return sample(predict(sys, make_uncertain(state), t))
+function simulate{T}(sys::AbstractSystem{T}, state::AbstractAbsoluteState{T}, t)
+    return simulate(sys, make_uncertain(state), t)
 end
 function simulate{T}(sys::LinearSystem{T}, state::AbstractUncertainState{T}, t)
-   return sample(predict(sys, state, t))
+    return sample(predict(sys, state, t))
 end
+function simulate{T}(sys::NonlinearSystem{T},state::UncertainDiscreteState{T},t)
+    sampled_initial_state = sample(state)
+    return sample(predict(sys, make_uncertain(sampled_initial_state), t))
+end
+# function simulate{T}(sys::NonlinearSystem{T},
+#                      state::UncertainContinuousState{T}, t)
+#     sampled_initial_state = sample(state)
+#     return sample(predict(sys, make_uncertain(sampled_initial_state), t))
+# end

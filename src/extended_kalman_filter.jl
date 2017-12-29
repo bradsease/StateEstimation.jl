@@ -62,16 +62,3 @@ function kalman_predict(ekf::ExtendedKalmanFilter, t)
     Pxy = xk.P * ekf.obs.dH_dx(t, ekf.estimate.x)'
     return xk, yk, Pxy
 end
-
-
-"""
-    simulate(kf::ExtendedKalmanFilter, t)
-
-Simulate next measurement for an Extended Kalman filter.
-
-TODO: Implement more accurate approach. This method is only a linear
-approximation.
-"""
-function simulate(ekf::ExtendedKalmanFilter, t)
-    return sample(predict(ekf.obs, predict(ekf.sys, ekf.estimate, t)))
-end
