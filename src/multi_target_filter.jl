@@ -88,17 +88,3 @@ function process!{T<:AbstractFloat}(mtf::MultiTargetFilter{T},
     process!(mtf.filter_bank[indmin(distances)], z)
     return nothing
 end
-
-
-"""
-    simulate(mtf::MultiTargetFilter, t)
-
-LOW-ACCURACY SIMULATOR. TO BE REMOVED.
-"""
-function inaccurate_simulate(mtf::MultiTargetFilter, t)
-    measurements::Vector{AbstractAbsoluteState} = []
-    for idx = 1:length(mtf.filter_bank)
-        push!(measurements, inaccurate_simulate(mtf.filter_bank[idx], t))
-    end
-    return measurements
-end
