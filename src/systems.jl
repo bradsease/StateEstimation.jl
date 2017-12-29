@@ -269,8 +269,17 @@ function simulate{T}(sys::NonlinearSystem{T},state::UncertainDiscreteState{T},t)
     sampled_initial_state = sample(state)
     return sample(predict(sys, make_uncertain(sampled_initial_state), t))
 end
-# function simulate{T}(sys::NonlinearSystem{T},
-#                      state::UncertainContinuousState{T}, t)
-#     sampled_initial_state = sample(state)
-#     return sample(predict(sys, make_uncertain(sampled_initial_state), t))
-# end
+function simulate{T}(sys::NonlinearSystem{T},
+                     state::UncertainContinuousState{T}, t)
+    sampled_initial_state = sample(state)
+    if all(sys.Q .== 0)
+        simulated_state = sampled_initial_state
+    else
+        f(t, u, du) = du .= sys.F(t, u)
+        g(t, u, du) = du .= chol(Hermitian(sys.Q))*u
+        prob = SDEProblem(f, g, sampled_initial_state.x, (state.t, t))
+        soln = DifferentialEquations.solve(prob)
+        simulated_state = ContinuousState(soln.u[end], t)
+    end
+    return simulated_state
+end

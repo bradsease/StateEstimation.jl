@@ -91,3 +91,10 @@ lin_sys = LinearSystem([0.0 1.0; 0.0 0.0], eye(2))
 @test isapprox(
     predict(nonlin_sys,  UncertainContinuousState([0.0, 1.0], eye(2)), 2.0).P,
     predict(lin_sys,  UncertainContinuousState([0.0, 1.0], eye(2)), 2.0).P)
+
+# Test simulation methods
+continuous_nl_fcn(t, x::Vector) = [x[2], 0.0]
+continuous_nl_jac(t, x::Vector) = [0.0 1.0; 0.0 0.0]
+nonlin_sys = NonlinearSystem(continuous_nl_fcn, continuous_nl_jac, eye(2), 2)
+@test typeof(simulate(nonlin_sys, ContinuousState([0.0, 1.0]), 1.0)) <:
+    ContinuousState
