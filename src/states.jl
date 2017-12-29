@@ -163,12 +163,20 @@ Sample uncertain state. Returns absolute state of the corresponding time
 format.
 """
 function sample{T}(state::UncertainDiscreteState{T})
-    return DiscreteState(
-        state.x+chol(Hermitian(state.P))*randn(T, length(state.x)), state.t)
+    if all(state.P .== 0)
+        sampled_state = state.x
+    else
+        sampled_state = state.x+chol(Hermitian(state.P))*randn(T, length(state.x))
+    end
+    return DiscreteState(sampled_state, state.t)
 end
 function sample{T}(state::UncertainContinuousState{T})
-    return ContinuousState(
-        state.x+chol(Hermitian(state.P))*randn(T, length(state.x)), state.t)
+    if all(state.P .== 0)
+        sampled_state = state.x
+    else
+        sampled_state = state.x+chol(Hermitian(state.P))*randn(T, length(state.x))
+    end
+    return ContinuousState(sampled_state, state.t)
 end
 
 

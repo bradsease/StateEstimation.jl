@@ -24,7 +24,9 @@ export
     # Least squares estimation
     LeastSquaresEstimator, add!, solve, solve!,
     # Multi-target filtering
-    MultiTargetFilter, NearestNeighborMTF
+    MultiTargetFilter, NearestNeighborMTF,
+    # Simulation
+    SingleStateSimulator, make_simulator
 
 
 abstract type Estimator end
@@ -43,5 +45,7 @@ include("extended_kalman_filter.jl")
 include("multi_target_filter.jl")
 
 include("least_squares.jl")
+
+include("simulator.jl")
 
 end

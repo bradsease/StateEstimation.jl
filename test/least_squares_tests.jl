@@ -17,10 +17,10 @@ srand(1)
 linear_sys = LinearSystem(-eye(2), 0.001*eye(2))
 linear_obs = LinearObserver(eye(2), 0.01*eye(2))
 initial_est = UncertainContinuousState([1.0, 2.0], 0.1*eye(2))
-true_state = initial_est
 lse = LeastSquaresEstimator(linear_sys, linear_obs, initial_est)
+simulator = make_simulator(lse)
 for idx = 1:10
-    true_state, measurement = simulate(lse.sys, lse.obs, true_state,(idx-1)*0.1)
+    true_state, measurement = simulate(simulator, (idx-1)*0.1)
     add!(lse, measurement)
 end
 @test distance(solve(lse), initial_est) < 0.2
@@ -31,10 +31,10 @@ srand(1)
 linear_sys = LinearSystem(-eye(2), 0.001*eye(2))
 linear_obs = LinearObserver(eye(2), 0.01*eye(2))
 initial_est = UncertainContinuousState([1.0, 2.0], 0.1*eye(2))
-true_state = initial_est
 lse = LeastSquaresEstimator(linear_sys, linear_obs, initial_est)
+simulator = make_simulator(lse)
 for idx = 1:10
-    true_state, measurement = simulate(lse.sys, lse.obs, true_state,(idx-1)*0.1)
+    true_state, measurement = simulate(simulator, (idx-1)*0.1)
     add!(lse, measurement)
 end
 archive = EstimatorHistory()
@@ -47,11 +47,11 @@ srand(1)
 linear_sys = LinearSystem(eye(3), 0.001*eye(3))
 linear_obs = LinearObserver(eye(3), 0.01*eye(3))
 initial_est = UncertainDiscreteState([1.0, 2.0, 3.0], 0.1*eye(3))
-true_state = initial_est
 lse = LeastSquaresEstimator(linear_sys, linear_obs, initial_est)
+simulator = make_simulator(lse)
 measurements = []
 for idx = 1:10
-    true_state, measurement = simulate(lse.sys, lse.obs, true_state, idx-1)
+    true_state, measurement = simulate(simulator, idx-1)
     push!(measurements, measurement)
 end
 add!(lse, measurements)
@@ -64,11 +64,11 @@ srand(1)
 linear_sys = LinearSystem(eye(3), 0.001*eye(3))
 linear_obs = LinearObserver(eye(3), 0.01*eye(3))
 initial_est = UncertainDiscreteState([1.0, 2.0, 3.0], 0.1*eye(3))
-true_state = initial_est
 lse = LeastSquaresEstimator(linear_sys, linear_obs, initial_est)
+simulator = make_simulator(lse)
 measurements = []
 for idx = 1:10
-    true_state, measurement = simulate(lse.sys, lse.obs, true_state, idx-1)
+    true_state, measurement = simulate(simulator, idx-1)
     push!(measurements, measurement)
 end
 add!(lse, measurements)
