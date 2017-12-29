@@ -29,9 +29,10 @@ add!(mtf, [kf2, kf3])
 
 # Simulate data and process
 srand(1);
+simulator = make_simulator(mtf)
 for i = 1:10
-    for (j, measurement) in enumerate(inaccurate_simulate(mtf, i*0.1))
-        process!(mtf, measurement)
+    for (j, sim_data) in enumerate(simulate(simulator, i*0.1))
+        process!(mtf, sim_data[2])
         @test mtf.filter_bank[j].estimate.t == i*0.1
     end
 end
@@ -64,9 +65,10 @@ mtf = NearestNeighborMTF([kf1, kf2, kf3])
 
 # Simulate data and process
 srand(1);
+simulator = make_simulator(mtf)
 for i = 1:10
-    for (j, measurement) in enumerate(inaccurate_simulate(mtf, i))
-        process!(mtf, measurement)
+    for (j, sim_data) in enumerate(simulate(simulator, i))
+        process!(mtf, sim_data[2])
         @test mtf.filter_bank[j].estimate.t == i
     end
 end

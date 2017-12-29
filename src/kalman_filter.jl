@@ -142,13 +142,3 @@ function process!{T}(kf::AbstractContinuousKalmanFilter{T}, zk::ContinuousState{
     push!(archive.residuals, UncertainContinuousState(zk.x - yk.x, yk.P, zk.t))
     return nothing
 end
-
-
-"""
-    simulate(kf::KalmanFilter, t)
-
-LOW-ACCURACY SIMULATOR. TO BE REMOVED.
-"""
-function inaccurate_simulate{T}(kf::KalmanFilter{T}, t)
-    return sample(predict(kf.obs, predict(kf.sys, kf.estimate, t)))
-end

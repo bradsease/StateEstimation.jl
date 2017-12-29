@@ -10,18 +10,35 @@ immutable SingleStateSimulator{T,S<:AbstractAbsoluteState{T}}
     sys::AbstractSystem{T}
     obs::AbstractObserver{T}
     true_state::S
-
-    function SingleStateSimulator(sys::AbstractSystem{T},
-                                  obs::AbstractObserver{T},
-                                  state::S
-                                  ) where {T, S<:AbstractAbsoluteState{T}}
-        new{T,S}(sys, obs, state)
-    end
 end
 function SingleStateSimulator(sys::AbstractSystem, obs::AbstractObserver,
                               state::AbstractUncertainState)
     return SingleStateSimulator(sys, obs, sample(state))
 end
+
+
+"""
+Multi-state simulator type
+"""
+immutable MultiStateSimulator{T,S<:AbstractAbsoluteState{T}}
+    simulator_bank::Vector{SingleStateSimulator{T,S}}
+end
+
+
+"""
+    make_simulator(est::Estimator)
+
+Convenience function for simulator creation. Automatically chooses the
+appropriate simulator type for the input estimator.
+"""
+function make_simulator(est::Estimator)
+    return SingleStateSimulator(est.sys, est.obs, est.estimate)
+end
+function make_simulator(mtf::MultiTargetFilter)
+    simulator_bank = [make_simulator(filter) for filter in mtf.filter_bank]
+    return MultiStateSimulator(simulator_bank)
+end
+
 
 """
     simulate(ssm:SingleStateSimulator, t)
@@ -35,39 +52,14 @@ function simulate(ssm::SingleStateSimulator, t)
     return true_state, measurement
 end
 
-
-# """
-# Multi-state simulator type
-# """
-# immutable MultiStateSimulator{T,S<:AbstractUncertainState{T}}
-#     true_state::Vector{S}
-#
-#     function MultiStateSimulator(initial_states::Vector{S}
-#                                 ) where {T, S<:AbstractUncertainState{T}}
-#         new{T,S}(deepcopy(initial_states))
-#     end
-# end
-# function MultiStateSimulator{T,S<:AbstractUncertainState}(
-#     mtf::MultiTargetFilter{T,S})
-#
-#     initial_states::Vector{S} = []
-#     for idx = 1:length(estimator.filter_bank)
-#         push!(initial_states, estimator.filter_bank[idx].estimate)
-#     end
-#
-#     return MultiStateSimulator(initial_states)
-# end
-
-
 """
-    make_simulator(est::Estimator)
+    simulate(msm:MultiStateSimulator, t)
 
-Convenience function for simulator creation. Automatically chooses the
-appropriate simulator type for the input estimator.
+Simulate a state and measurement for a given time using a bank of internal
+models and truth states. Returns a vector of (true_state, measurement) tuples.
 """
-function make_simulator(est::SequentialEstimator)
-    return SingleStateSimulator(est.sys, est.obs, est.estimate)
-end
-function make_simulator(est::BatchEstimator)
-    return SingleStateSimulator(est.sys, est.obs, est.estimate)
+function simulate(msm::MultiStateSimulator, t)
+    sim_tuples = [simulate(ssm.sys, ssm.obs, ssm.true_state, t) for
+                  ssm in msm.simulator_bank]
+    return sim_tuples
 end
