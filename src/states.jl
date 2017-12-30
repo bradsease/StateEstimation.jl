@@ -10,7 +10,10 @@ const Covariance{T} = Array{T,2} where T
 
 
 """
-Discrete-time state.
+Discrete-time state. Contains a state vector and an Integer-valued time step.
+
+    DiscreteState(x::Vector[, t::Int64])
+    DiscreteState(x::AbstractFloat[, t::Int64])
 """
 mutable struct DiscreteState{T<:AbstractFloat} <: AbstractAbsoluteState{T}
     x::Vector{T}
@@ -23,7 +26,11 @@ DiscreteState(x::AbstractFloat) = DiscreteState([x])
 DiscreteState(x::AbstractFloat, t::Int64) = DiscreteState([x], t)
 
 """
-Uncertain discrete-time state.
+Uncertain discrete-time state. Contains a state vector, a covariance matrix
+representing the uncertainty in that state, and an Integer-valued time step.
+
+    DiscreteState(x::Vector, P::Matrix[, t::Int64])
+    DiscreteState(x::AbstractFloat, P::AbstractFloat[, t::Int64])
 """
 mutable struct UncertainDiscreteState{T<:AbstractFloat} <:
     AbstractUncertainState{T}
@@ -68,7 +75,10 @@ end
 
 
 """
-Continuous-time state.
+Continuous-time state. Contains a state vector and a floating-point time step.
+
+    ContinuousState(x::Vector[, t::AbstractFloat])
+    ContinuousState(x::AbstractFloat[, t::AbstractFloat])
 """
 mutable struct ContinuousState{T<:AbstractFloat} <: AbstractAbsoluteState{T}
     x::Vector{T}
@@ -81,7 +91,11 @@ ContinuousState(x::AbstractFloat) = ContinuousState([x])
 ContinuousState{T<:AbstractFloat}(x::T, t::T) = ContinuousState([x], t)
 
 """
-Uncertain continuous-time state.
+Uncertain continuous-time state. Contains a state vector, a covariance matrix
+representing the uncertainty in that state, and a floating-point time step.
+
+    UncertainContinuousState(x::Vector, P::Matrix[, t::AbstractFloat])
+    UncertainContinuousState(x::AbstractFloat, P::AbstractFloat[, t::AbstractFloat])
 """
 mutable struct UncertainContinuousState{T<:AbstractFloat} <:
     AbstractUncertainState{T}
@@ -181,7 +195,7 @@ end
 
 
 """
-    distance(state1::AbstractState{T}, state2::AbstractState{T})
+    distance(state1::AbstractState, state2::AbstractState)
 """
 function distance{T}(state1::AbstractState{T}, state2::AbstractState{T})
     return sqrt(sum((state1.x .- state2.x).^2))
@@ -189,17 +203,14 @@ end
 
 
 """
-    mahalanobis(x::AbstractAbsoluteState{T}, y::AbstractUncertainState{T})
+    mahalanobis(x::AbstractAbsoluteState, y::AbstractUncertainState)
+    mahalanobis(x::AbstractAbsoluteState, y::AbstractAbsoluteState, P::Array)
 """
 function mahalanobis{T}(x::AbstractAbsoluteState{T},
                         y::AbstractUncertainState{T})
     diff_vec = x.x .- y.x
     return sqrt(diff_vec'*inv(y.P)*diff_vec)
 end
-"""
-    mahalanobis(x::AbstractAbsoluteState{T}, y::AbstractAbsoluteState{T},
-                P::Array{T,2})
-"""
 function mahalanobis{T}(x::AbstractAbsoluteState{T},
                         y::AbstractAbsoluteState{T}, P::Array{T,2})
     diff_vec = x.x .- y.x

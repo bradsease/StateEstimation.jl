@@ -8,25 +8,22 @@ abstract type AbstractSystem{T} end
 
 
 """
-Linear system of equations.
+Linear system of equations. Systems take a specific form depending on the type
+of state they are used in conjunction with. With a `DiscreteState`, the system
+takes on a discrete form
 
-Discrete Form:
+\$x_k = A x_{k-1} + w \\quad \\text{where} \\quad w \\sim N(0, Q)\$
 
-    ``x_k = A x_{k-1} + w`` where ``w ~ N(0, Q)``.
+With a `ContinuousState`, the system takes on a continous ODE form
 
-Continuous Form:
+\$\\dot{x}(t) = A x(t) + w \\quad \\text{where} \\quad w \\sim N(0, Q)\$
 
-    ``x'(t) = A x(t) + w`` where ``w ~ N(0, Q)``.
+A LinearSystem can be constructed with both matrix and scalar inputs. The
+linear system will not contain process noise if the covaraince Q is
+not provided.
 
-Constructors:
-
-    LinearSystem(A::Matrix, Q::Covariance)
-
-    LinearSystem(A::Matrix)
-
-    LinearSystem(A::AbstractFloat)
-
-    LinearSystem(A::AbstractFloat, Q::AbstractFloat)
+    LinearSystem(A::Matrix[, Q::Matrix])
+    LinearSystem(A::AbstractFloat[, Q::AbstractFloat])
 """
 struct LinearSystem{T<:AbstractFloat} <: AbstractSystem{T}
     A::Matrix{T}
@@ -53,20 +50,22 @@ LinearSystem{T<:AbstractFloat}(A::T, Q::T) =
 
 
 """
-Nonlinear system of equations
+Nonlinear system of equations. Systems take a specific form depending on the
+type of state they are used in conjunction with. With a `DiscreteState`, the
+system takes on a discrete form
 
-Discrete Form:
+\$x_k = F(k, x_{k-1}) + w \\quad \\text{where} \\quad w \\sim N(0, Q)\$
 
-    ``x_k = F(k, x_{k-1}) + w`` where ``w ~ N(0, Q)``.
+With a `ContinuousState`, the system takes on a continous ODE form
 
-Continuous Form:
+\$\\dot{x}(t) = F(t, x(t)) + w \\quad \\text{where} \\quad w \\sim N(0, Q)\$
 
-    ``x'(t) = F(t, x(t)) + w`` where ``w ~ N(0, Q)``.
-
-Constructors:
+NonlinearSystem constructors require both the function,
+`F(t::Number, x::Vector)`, and its Jacobian, `dF_dx(t::Number, x::Vector)`. Both
+`F()` and `dF_dx()` must return a vector. The variable ndim indicates the
+dimension of the expected state.
 
     NonlinearSystem(F::Function, dF_dx::Function, Q::Covariance, ndim)
-
     NonlinearSystem(F::Function, dF_dx::Function, Q::AbstractFloat, ndim)
 """
 struct NonlinearSystem{T<:AbstractFloat} <: AbstractSystem{T}
@@ -167,10 +166,14 @@ end
 
 
 """
-    predict(sys::AbstractSystem{T}, state::AbstractState{T})
+    predict(sys::AbstractSystem, state::AbstractState)
 
 Predict a state through an arbitrary system.
+
+Use predict!(::AbstractSystem, AbstractState) to update the input state
+with the predicted state in-place.
 """
+function predict(::AbstractSystem) end
 function predict{T}(sys::AbstractSystem{T}, state::AbstractState{T}, t)
     out_state = deepcopy(state)
     predict!(sys, out_state, t)
@@ -255,10 +258,11 @@ end
 
 
 """
-   simulate(sys::AbstractSystem{T}, state::AbstractState{T}, t)
+    simulate(sys::AbstractSystem{T}, state::AbstractState{T}, t)
 
 Simulate a state prediction with initial state error and process noise.
 """
+function simulate(::AbstractSystem) end
 function simulate{T}(sys::AbstractSystem{T}, state::AbstractAbsoluteState{T}, t)
     return simulate(sys, make_uncertain(state), t)
 end

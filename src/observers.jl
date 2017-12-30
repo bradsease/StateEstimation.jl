@@ -5,11 +5,15 @@ General observers
 abstract type AbstractObserver{T} end
 
 """
-Linear observer.
+Linear observer with the form
 
-``y_k = H x_k + v``
+\$y_k = H x_k + v \\quad \\text{where} \\quad  v ~ N(0, R)\$
 
-where ``v ~ N(0, R)``.
+A linear observer can be constructed with both matrix and scalar inputs. The
+observer will not model measurement noise if the covariance R is not provided.
+
+    LinearObserver(H::Matrix[, R::Matrix])
+    LinearObserver(H::AbstractFloat[, R::AbstractFloat])
 """
 struct LinearObserver{T<:AbstractFloat} <: AbstractObserver{T}
     H::Matrix{T}
@@ -39,15 +43,16 @@ LinearObserver{T<:AbstractFloat}(H::RowVector{T}, R::Covariance{T}) =
 
 
 """
-Nonlinear observer.
+Nonlinear observer with the form
 
-    ``y_k = H(k, x_k) + v`` where ``v ~ N(0, R)``.
+\$y_k = H(k, x_k) + v \\quad  \\text{where} \\quad v ~ N(0, R)\$
 
-Constructors:
+NonlinearObserver constructors require both the measurement function,
+`H(t::Number, x::Vector)`, and its Jacobian, `dH_dx(t::Number, x::Vector)`. Both
+`H()` and `dH_dx()` must return a vector.
 
-    NonlinearObserver(H::Function, dH_dx::Function, R::Covariance, ndim)
-
-    NonlinearObserver(H::Function, dH_dx::Function, R::AbstractFloat, ndim)
+    NonlinearObserver(H::Function, dH_dx::Function, R::Matrix)
+    NonlinearObserver(H::Function, dH_dx::Function, R::AbstractFloat)
 """
 struct NonlinearObserver{T<:AbstractFloat} <: AbstractObserver{T}
     H::Function
@@ -117,6 +122,7 @@ end
 """
     predict(obs::LinearObserver{T}, state::AbstractState{T})
 """
+function predict(::AbstractObserver) end
 function predict{T}(obs::LinearObserver{T}, state::DiscreteState{T})
     return DiscreteState(obs.H*state.x, state.t)
 end
@@ -155,6 +161,7 @@ end
 
 Simulate a state observation.
 """
+function simulate(::AbstractObserver) end
 function simulate{T}(obs::AbstractObserver{T}, state::AbstractAbsoluteState{T})
     return simulate(obs, make_uncertain(state))
 end
