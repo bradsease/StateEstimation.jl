@@ -4,7 +4,27 @@
 
 
 """
-Extended Kalman Filter
+    ExtendedKalmanFilter(sys::NonlinearSystem, obs::NonlinearObserver,
+                         estimate::AbstractState[, consider_states::Vector{UInt}])
+
+Extended Kalman Filter type. The internal filter model takes on a specific form
+depending on the type of the initial estimate. For a `DiscreteState`,
+
+\$x_k = F(k, x_{k-1}) + w_k\$
+\$y_k = H(k, x_k) + v_k\$
+
+where \$w_k \\sim N(0, Q)\$ and \$v_k \\sim N(0, R)\$. For a `ContinuousState`,
+
+\$\\dot{x}(t_k) = F(t_k, x(t_k)) + w(t_k)\$
+\$y(t_k) = H(t_k, x(t_k)) + v(t_k)\$
+
+Construction of an ExtendedKalmanFilter requires an initial estimate.
+Internally, the initial estimate is an uncertain state type. The constructor
+automatically converts absolute initial estimates to uncertain states with zero
+covariance.
+
+The `consider_states` input contains a list of indices of state elements to be
+considered in the filtering process and not updated.
 """
 immutable ExtendedKalmanFilter{T,S<:AbstractUncertainState{T}} <:
                                                        AbstractKalmanFilter{T,S}
@@ -13,11 +33,6 @@ immutable ExtendedKalmanFilter{T,S<:AbstractUncertainState{T}} <:
     estimate::S
     consider_states::Vector{UInt16}
 
-    function ExtendedKalmanFilter(sys::NonlinearSystem{T},
-                                  obs::NonlinearObserver{T}, estimate::S
-                                  ) where {T, S<:AbstractUncertainState{T}}
-        new{T,S}(sys, obs, estimate, [])
-    end
     function ExtendedKalmanFilter(sys::NonlinearSystem{T},
                                   obs::NonlinearObserver{T}, estimate::S,
                                   consider_states::Vector
@@ -34,15 +49,17 @@ immutable ExtendedKalmanFilter{T,S<:AbstractUncertainState{T}} <:
         new{T,S}(sys, obs, estimate, consider_states)
     end
 end
-function ExtendedKalmanFilter(sys::NonlinearSystem{T},
-                              obs::NonlinearObserver{T}, estimate::S
-                              ) where {T, S<:AbstractAbsoluteState{T}}
+function ExtendedKalmanFilter(sys::NonlinearSystem, obs::NonlinearObserver,
+                              estimate::AbstractUncertainState)
+    ExtendedKalmanFilter(sys, obs, estimate, [])
+end
+function ExtendedKalmanFilter(sys::NonlinearSystem, obs::NonlinearObserver,
+                              estimate::AbstractAbsoluteState)
     ExtendedKalmanFilter(sys, obs, make_uncertain(estimate))
 end
-function ExtendedKalmanFilter(sys::NonlinearSystem{T},
-                              obs::NonlinearObserver{T}, estimate::S,
-                              consider_states::Vector
-                              ) where {T, S<:AbstractAbsoluteState{T}}
+function ExtendedKalmanFilter(sys::NonlinearSystem, obs::NonlinearObserver,
+                              estimate::AbstractAbsoluteState,
+                              consider_states::Vector)
     ExtendedKalmanFilter(sys, obs, make_uncertain(estimate), consider_states)
 end
 

@@ -10,10 +10,11 @@ const Covariance{T} = Array{T,2} where T
 
 
 """
-Discrete-time state. Contains a state vector and an Integer-valued time step.
-
     DiscreteState(x::Vector[, t::Int64])
     DiscreteState(x::AbstractFloat[, t::Int64])
+
+Discrete-time state. Contains a state vector and an Integer-valued time step. If
+not provided, the default value of `t` is 0.
 """
 mutable struct DiscreteState{T<:AbstractFloat} <: AbstractAbsoluteState{T}
     x::Vector{T}
@@ -26,11 +27,15 @@ DiscreteState(x::AbstractFloat) = DiscreteState([x])
 DiscreteState(x::AbstractFloat, t::Int64) = DiscreteState([x], t)
 
 """
-Uncertain discrete-time state. Contains a state vector, a covariance matrix
-representing the uncertainty in that state, and an Integer-valued time step.
+    UncertainDiscreteState(x::Vector, P::Matrix[, t::Int64])
+    UncertainDiscreteState(x::AbstractFloat, P::AbstractFloat[, t::Int64])
 
-    DiscreteState(x::Vector, P::Matrix[, t::Int64])
-    DiscreteState(x::AbstractFloat, P::AbstractFloat[, t::Int64])
+Uncertain discrete-time state. Contains a state vector, a covariance matrix
+representing the uncertainty in that state, and an Integer-valued time step. If
+not provided, the default value of `t` is 0.
+
+Uncertain states are Gaussian distributioned random varaibles with mean \$x\$
+and covariance \$P\$.
 """
 mutable struct UncertainDiscreteState{T<:AbstractFloat} <:
     AbstractUncertainState{T}
@@ -39,8 +44,7 @@ mutable struct UncertainDiscreteState{T<:AbstractFloat} <:
     P::Covariance{T}
     t::Int64
 
-    function UncertainDiscreteState(x::Vector{T}, P::Covariance{T},
-        t::Int64) where T
+    function UncertainDiscreteState(x::Vector{T}, P::Covariance{T}, t) where T
             if length(x) != size(P)[1] || length(x) != size(P)[2]
                 throw(DimensionMismatch(
                     "Dimensions of covariance and state do not match."))
@@ -57,28 +61,16 @@ mutable struct UncertainDiscreteState{T<:AbstractFloat} <:
 end
 UncertainDiscreteState{T<:AbstractFloat}(x::T, P::T) =
     UncertainDiscreteState([x], reshape([P],1,1))
-UncertainDiscreteState{T<:AbstractFloat}(x::T, P::T, t::Int64) =
+UncertainDiscreteState{T<:AbstractFloat}(x::T, P::T, t) =
     UncertainDiscreteState([x], reshape([P],1,1), t)
-
-function DiscreteState{T}(state::UncertainDiscreteState{T})
-    return DiscreteState(state.x, state.t)
-end
-
-function UncertainDiscreteState{T}(state::DiscreteState{T})
-    return UncertainDiscreteState(state.x, zeros(length(state.x),
-        length(state.x)), state.t)
-end
-
-function UncertainDiscreteState{T}(state::DiscreteState{T}, P::Covariance{T})
-    return UncertainDiscreteState(state.x, P, state.t)
-end
 
 
 """
-Continuous-time state. Contains a state vector and a floating-point time step.
-
     ContinuousState(x::Vector[, t::AbstractFloat])
     ContinuousState(x::AbstractFloat[, t::AbstractFloat])
+
+Continuous-time state. Contains a state vector and a floating-point time step.
+If not provided, the default value of `t` is 0.0.
 """
 mutable struct ContinuousState{T<:AbstractFloat} <: AbstractAbsoluteState{T}
     x::Vector{T}
@@ -91,11 +83,15 @@ ContinuousState(x::AbstractFloat) = ContinuousState([x])
 ContinuousState{T<:AbstractFloat}(x::T, t::T) = ContinuousState([x], t)
 
 """
-Uncertain continuous-time state. Contains a state vector, a covariance matrix
-representing the uncertainty in that state, and a floating-point time step.
-
     UncertainContinuousState(x::Vector, P::Matrix[, t::AbstractFloat])
     UncertainContinuousState(x::AbstractFloat, P::AbstractFloat[, t::AbstractFloat])
+
+Uncertain continuous-time state. Contains a state vector, a covariance matrix
+representing the uncertainty in that state, and a floating-point time step. If
+not provided, the default value for `t` is 0.0.
+
+Uncertain states are Gaussian distributioned random varaibles with mean \$x\$
+and covariance \$P\$.
 """
 mutable struct UncertainContinuousState{T<:AbstractFloat} <:
     AbstractUncertainState{T}
@@ -125,39 +121,32 @@ UncertainContinuousState{T<:AbstractFloat}(x::T, P::T) =
 UncertainContinuousState{T<:AbstractFloat}(x::T, P::T, t::T) =
     UncertainContinuousState([x], reshape([P],1,1), t)
 
-function ContinuousState{T}(state::UncertainContinuousState{T})
-    return ContinuousState(state.x, state.t)
-end
-
-function UncertainContinuousState{T}(state::ContinuousState{T})
-    return UncertainContinuousState(state.x, zeros(length(state.x),
-        length(state.x)), state.t)
-end
-
-function UncertainContinuousState{T}(state::ContinuousState{T},P::Covariance{T})
-    return UncertainContinuousState(state.x, P, state.t)
-end
-
 
 """
-    make_uncertain(state::AbstractUncertainState[, P::Covariance{T}])
+    make_uncertain(state::AbstractUncertainState[, P::Matrix])
 
-Create an uncertain copy of the input absolute state.
+Create an uncertain copy of the input absolute state. If not provided, the
+covariance matrix, `P`, is all zero.
 """
-make_uncertain(state::DiscreteState) = UncertainDiscreteState(state)
+make_uncertain{T}(state::DiscreteState{T}) =
+    UncertainDiscreteState(
+        state.x, zeros(T, length(state.x), length(state.x)), state.t)
 make_uncertain{T}(state::DiscreteState{T}, P::Covariance{T}) =
-    UncertainDiscreteState(state, P)
-make_uncertain(state::ContinuousState) = UncertainContinuousState(state)
+    UncertainDiscreteState(state.x, P, state.t)
+make_uncertain{T}(state::ContinuousState{T}) =
+    UncertainContinuousState(
+        state.x, zeros(T, length(state.x), length(state.x)), state.t)
 make_uncertain{T}(state::ContinuousState{T}, P::Covariance{T}) =
-    UncertainContinuousState(state, P)
+    UncertainContinuousState(state.x, P, state.t)
 
 """
     make_absolute(state::AbstractUncertainState)
 
 Create an absolute copy of the input uncertain state.
 """
-make_absolute(state::UncertainDiscreteState) = DiscreteState(state)
-make_absolute(state::UncertainContinuousState) = ContinuousState(state)
+make_absolute(state::UncertainDiscreteState) = DiscreteState(state.x, state.t)
+make_absolute(state::UncertainContinuousState) =
+    ContinuousState(state.x, state.t)
 
 
 """
@@ -170,11 +159,12 @@ absolute_type{T}(state::UncertainContinuousState{T}) = ContinuousState{T}
 uncertain_type{T}(state::DiscreteState{T}) = UncertainDiscreteState{T}
 uncertain_type{T}(state::ContinuousState{T}) = UncertainContinuousState{T}
 
+
 """
     sample(state::AbstractUncertainState)
 
 Sample uncertain state. Returns absolute state of the corresponding time
-format.
+format (i.e. UncertainDiscreteState => DiscreteState).
 """
 function sample{T}(state::UncertainDiscreteState{T})
     if all(state.P .== 0)
@@ -196,6 +186,11 @@ end
 
 """
     distance(state1::AbstractState, state2::AbstractState)
+
+Computes the Euclidean distance between two states. Ignores uncertainty in
+either of the states.
+
+\$d(x,y) = \\left\\|{x-y}\\right\\|\$
 """
 function distance{T}(state1::AbstractState{T}, state2::AbstractState{T})
     return sqrt(sum((state1.x .- state2.x).^2))
@@ -204,7 +199,12 @@ end
 
 """
     mahalanobis(x::AbstractAbsoluteState, y::AbstractUncertainState)
-    mahalanobis(x::AbstractAbsoluteState, y::AbstractAbsoluteState, P::Array)
+    mahalanobis(x::AbstractAbsoluteState, y::AbstractAbsoluteState, P::Matrix)
+
+Compute the Mahalanobis distance between a point and a distribution or two
+points in the same distribution. If `P` is the covariance of the distribution,
+
+\$d(x,y) = \\sqrt{(x-y)^T P^{-1} (x-y)}\$
 """
 function mahalanobis{T}(x::AbstractAbsoluteState{T},
                         y::AbstractUncertainState{T})

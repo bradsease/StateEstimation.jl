@@ -8,22 +8,22 @@ abstract type AbstractSystem{T} end
 
 
 """
+    LinearSystem(A::Matrix[, Q::Matrix])
+    LinearSystem(A::AbstractFloat[, Q::AbstractFloat])
+
 Linear system of equations. Systems take a specific form depending on the type
 of state they are used in conjunction with. With a `DiscreteState`, the system
 takes on a discrete form
 
-\$x_k = A x_{k-1} + w \\quad \\text{where} \\quad w \\sim N(0, Q)\$
+\$x_k = A x_{k-1} + w_k \\quad \\text{where} \\quad w_k \\sim N(0, Q)\$
 
 With a `ContinuousState`, the system takes on a continous ODE form
 
-\$\\dot{x}(t) = A x(t) + w \\quad \\text{where} \\quad w \\sim N(0, Q)\$
+\$\\dot{x}(t) = A x(t) + w(t)\$
 
 A LinearSystem can be constructed with both matrix and scalar inputs. The
 linear system will not contain process noise if the covaraince Q is
 not provided.
-
-    LinearSystem(A::Matrix[, Q::Matrix])
-    LinearSystem(A::AbstractFloat[, Q::AbstractFloat])
 """
 struct LinearSystem{T<:AbstractFloat} <: AbstractSystem{T}
     A::Matrix{T}
@@ -38,11 +38,8 @@ struct LinearSystem{T<:AbstractFloat} <: AbstractSystem{T}
         end
         new{T}(A, Q)
     end
-
-    function LinearSystem(A::Matrix{T}) where T
-        new{T}(A, zeros(T, size(A)))
-    end
 end
+LinearSystem{T<:AbstractFloat}(A::Matrix{T}) = LinearSystem(A, zeros(T,size(A)))
 LinearSystem{T<:AbstractFloat}(A::T) =
     LinearSystem(reshape([A], 1, 1), zeros(T, 1, 1))
 LinearSystem{T<:AbstractFloat}(A::T, Q::T) =
@@ -50,6 +47,9 @@ LinearSystem{T<:AbstractFloat}(A::T, Q::T) =
 
 
 """
+    NonlinearSystem(F::Function, dF_dx::Function, Q::Covariance)
+    NonlinearSystem(F::Function, dF_dx::Function, Q::AbstractFloat)
+
 Nonlinear system of equations. Systems take a specific form depending on the
 type of state they are used in conjunction with. With a `DiscreteState`, the
 system takes on a discrete form
@@ -62,27 +62,20 @@ With a `ContinuousState`, the system takes on a continous ODE form
 
 NonlinearSystem constructors require both the function,
 `F(t::Number, x::Vector)`, and its Jacobian, `dF_dx(t::Number, x::Vector)`. Both
-`F()` and `dF_dx()` must return a vector. The variable ndim indicates the
-dimension of the expected state.
-
-    NonlinearSystem(F::Function, dF_dx::Function, Q::Covariance, ndim)
-    NonlinearSystem(F::Function, dF_dx::Function, Q::AbstractFloat, ndim)
+`F()` and `dF_dx()` must return a vector.
 """
 struct NonlinearSystem{T<:AbstractFloat} <: AbstractSystem{T}
     F::Function
     dF_dx::Function
     Q::Covariance{T}
 
-    function NonlinearSystem(F::Function, dF_dx::Function, Q::Covariance{T},
-                             ndim::Integer) where T
-        if (ndim, ndim) != size(Q)
-            throw(DimensionMismatch("Incompatible size of system matrices."))
-        end
+    function NonlinearSystem(F::Function, dF_dx::Function,
+                             Q::Covariance{T}) where T
         new{T}(F, dF_dx, Q)
     end
 end
-NonlinearSystem(F::Function, dF_dx::Function, Q::AbstractFloat, ndim::Integer) =
-    NonlinearSystem(F, dF_dx, reshape([Q], 1, 1), ndim)
+NonlinearSystem(F::Function, dF_dx::Function, Q::AbstractFloat) =
+    NonlinearSystem(F, dF_dx, reshape([Q], 1, 1))
 
 
 """
@@ -166,12 +159,16 @@ end
 
 
 """
-    predict(sys::AbstractSystem, state::AbstractState)
+    predict(sys::AbstractSystem, state::AbstractState, t::Number)
 
-Predict a state through an arbitrary system.
+Predict a state through an arbitrary system. The time step, `t`, must match the
+input state in its type, i.e. for a DiscreteState, `t` must be an integer.
 
-Use predict!(::AbstractSystem, AbstractState) to update the input state
-with the predicted state in-place.
+The `predict` method will advance both the state vector and, if necessary, its
+covariance through the dynamics of the input system. For NonlinearSystems, the
+covariance prediction is only a linear approximation.
+
+Use `predict!` to update the input state with the predicted state in-place.
 """
 function predict(::AbstractSystem) end
 function predict{T}(sys::AbstractSystem{T}, state::AbstractState{T}, t)
@@ -182,7 +179,7 @@ end
 
 
 """
-    predict!(sys::AbstractSystem{T}, state::AbstractState{T})
+    predict!(sys::AbstractSystem, state::AbstractState, t::Number)
 
 In-place prediction of a state through an arbitrary system.
 """
@@ -258,9 +255,12 @@ end
 
 
 """
-    simulate(sys::AbstractSystem{T}, state::AbstractState{T}, t)
+    simulate(sys::AbstractSystem, state::AbstractState, t::Number)
 
-Simulate a state prediction with initial state error and process noise.
+Simulate a state prediction with initial state error and process noise. This
+method returns an absolute state by sampling the initial state (if uncertain),
+and propagating that state through the input system in the presence of process
+noise.
 """
 function simulate(::AbstractSystem) end
 function simulate{T}(sys::AbstractSystem{T}, state::AbstractAbsoluteState{T}, t)

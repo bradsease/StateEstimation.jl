@@ -4,7 +4,28 @@
 
 
 """
-Batch least squares estimator
+    LeastSquaresEstimator(sys::LinearSystem, obs::LinearObserver,
+                          estimate::AbstractUncertainState)
+
+Linear batch least squares estimator. The internal estimator model takes on a
+specific form depending on the type of the initial estimate. For a
+`DiscreteState`,
+
+\$x_k = A x_{k-1} + w_k\$
+\$y_k = H x_k + v_k\$
+
+where \$w_k \\sim N(0, Q)\$ and \$v_k \\sim N(0, R)\$. For a `ContinuousState`,
+
+\$\\dot{x}(t_k) = A x(t_k) + w(t_k)\$
+\$y(t_k) = H x(t_k) + v(t_k)\$
+
+Construction of a LeastSquaresEstimator requires an initial estimate.
+Internally, the initial estimate is an uncertain state type. The constructor
+automatically converts absolute initial estimates to uncertain states with zero
+covariance.
+
+`LeastSquaresEstimator` does not currently use the value of the initial estimate
+or its covariance in solving for a new estimate.
 """
 immutable LeastSquaresEstimator{T,S<:AbstractUncertainState{T},
                             M<:AbstractAbsoluteState{T}} <: BatchEstimator{T}
@@ -20,23 +41,22 @@ immutable LeastSquaresEstimator{T,S<:AbstractUncertainState{T},
         M = absolute_type(estimate)
         new{T,S,M}(sys, obs, estimate, Vector{M}([]))
     end
-
-    function LeastSquaresEstimator(sys::LinearSystem{T}, obs::LinearObserver{T},
-        estimate::M) where {T,M<:AbstractAbsoluteState{T}}
-        assert_compatibility(sys, estimate)
-        assert_compatibility(obs, estimate)
-        S = uncertain_type(estimate)
-        new{T,S,M}(sys, obs, make_uncertain(estimate), Vector{M}([]))
-    end
+end
+function LeastSquaresEstimator(sys::LinearSystem, obs::LinearObserver,
+                               estimate::AbstractAbsoluteState)
+    LeastSquaresEstimator(sys, obs, make_uncertain(estimate))
 end
 
 
 """
-    add!(lse:LeastSquaresEstimator, measurement::AbstractAbsoluteState)
+    add!(lse::LeastSquaresEstimator, measurement::AbstractAbsoluteState)
+    add!(lse::LeastSquaresEstimator, measurements::Vector{AbstractAbsoluteState})
 
-Add measurement to LeastSquaresEstimator for processing.
+Add one or more measurements to a `LeastSquaresEstimator` for future processing.
+The `LeastSquaresEstimator` will store these measurements internally.
 """
-function add!{T,S,M}(lse::LeastSquaresEstimator{T,S,M}, measurement::M)
+function add!(::LeastSquaresEstimator) end
+function add!(lse::LeastSquaresEstimator, measurement::AbstractAbsoluteState)
     assert_compatibility(measurement, lse.obs)
     push!(lse.measurements, measurement)
     return nothing
@@ -90,7 +110,15 @@ compute_states!(state_history::Vector, lse::LeastSquaresEstimator) =
 
 
 """
-    solve(lse:LeastSquaresEstimator)
+    solve(lse:LeastSquaresEstimator[, archive::EstimatorHistory])
+
+Solve for an updated state estimate using the internal model and measurements
+in a `LeastSquaresEstimator`. Returns an uncertain state containing the updated
+state estimate and its covariance. Use `solve!` to update the internal estimate
+of the `LeastSquaresEstimator` in-place.
+
+Optionally provide an `EstimatorHistory` archive variable to store intermediate
+solution data.
 """
 function solve{T}(lse::LeastSquaresEstimator{T})
     m = size(lse.obs.H, 1)
@@ -125,13 +153,13 @@ end
 
 
 """
-    solve!(lse:LeastSquaresEstimator)
+    solve!(lse:LeastSquaresEstimator[, archive::EstimatorHistory])
 """
-function solve!{T}(lse::LeastSquaresEstimator{T})
+function solve!(lse::LeastSquaresEstimator)
     lse.estimate .= solve(lse)
     return nothing
 end
-function solve!{T}(lse::LeastSquaresEstimator{T}, archive::EstimatorHistory{T})
+function solve!(lse::LeastSquaresEstimator, archive::EstimatorHistory)
     lse.estimate .= solve(lse, archive)
     return nothing
 end

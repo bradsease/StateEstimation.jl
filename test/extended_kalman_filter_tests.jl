@@ -4,7 +4,7 @@
 # System setup
 discrete_nl_fcn(t, x::Vector) = x;
 discrete_nl_jac(t, x::Vector) = eye(length(x))
-nonlin_sys = NonlinearSystem(discrete_nl_fcn, discrete_nl_jac, eye(2), 2)
+nonlin_sys = NonlinearSystem(discrete_nl_fcn, discrete_nl_jac, eye(2))
 nonlin_obs = NonlinearObserver(discrete_nl_fcn, discrete_nl_jac, eye(2))
 initial_est = UncertainDiscreteState([1.0, 2.0], eye(2))
 
@@ -21,7 +21,7 @@ ExtendedKalmanFilter(nonlin_sys, nonlin_obs, initial_est, [2])
 srand(1)
 discrete_nl_fcn(t, x::Vector) = x;
 discrete_nl_jac(t, x::Vector) = eye(length(x))
-nonlin_sys = NonlinearSystem(discrete_nl_fcn, discrete_nl_jac, eye(2), 2)
+nonlin_sys = NonlinearSystem(discrete_nl_fcn, discrete_nl_jac, eye(2))
 nonlin_obs = NonlinearObserver(discrete_nl_fcn, discrete_nl_jac, eye(2))
 initial_est = UncertainDiscreteState([1.0, 2.0], eye(2))
 ekf = ExtendedKalmanFilter(nonlin_sys, nonlin_obs, initial_est)

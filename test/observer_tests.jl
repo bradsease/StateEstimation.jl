@@ -6,7 +6,9 @@
 @test size(LinearObserver(1.0).H) == (1,1)
 @test size(LinearObserver(1.0, 1.0).R) == (1,1)
 @test size(LinearObserver(eye(3), eye(3)).H) == (3,3)
+@test size(LinearObserver(ones(3)).R) == (3,3)
 @test size(LinearObserver(ones(3), eye(3)).H) == (3,1)
+@test size(LinearObserver(ones(3)').R) == (1,1)
 @test size(LinearObserver(ones(3)', 1.0).R) == (1,1)
 @test size(LinearObserver(ones(3)', ones(1,1)').R) == (1,1)
 

@@ -5,15 +5,17 @@ General observers
 abstract type AbstractObserver{T} end
 
 """
+    LinearObserver(H::Matrix[, R::Matrix])
+    LinearObserver(H::AbstractFloat[, R::AbstractFloat])
+    LinearObserver(H::Vector[, R::Matrix])
+    LinearObserver(H::RowVector[, R::Union{Matrix, AbstractFloat}])
+
 Linear observer with the form
 
-\$y_k = H x_k + v \\quad \\text{where} \\quad  v ~ N(0, R)\$
+\$y_k = H x_k + v_k \\quad \\text{where} \\quad  v_k \\sim N(0, R)\$
 
 A linear observer can be constructed with both matrix and scalar inputs. The
 observer will not model measurement noise if the covariance R is not provided.
-
-    LinearObserver(H::Matrix[, R::Matrix])
-    LinearObserver(H::AbstractFloat[, R::AbstractFloat])
 """
 struct LinearObserver{T<:AbstractFloat} <: AbstractObserver{T}
     H::Matrix{T}
@@ -25,17 +27,18 @@ struct LinearObserver{T<:AbstractFloat} <: AbstractObserver{T}
         end
         new{T}(H, R)
     end
-
-    function LinearObserver(H::Matrix{T}) where T
-        new{T}(H, zeros(size(H)))
-    end
 end
+LinearObserver{T}(H::Matrix{T}) = LinearObserver(H,zeros(T,size(H,1),size(H,1)))
 LinearObserver{T<:AbstractFloat}(H::T) =
-    LinearObserver(reshape([H],1,1), zeros(1,1))
+    LinearObserver(reshape([H],1,1), zeros(T,1,1))
 LinearObserver{T<:AbstractFloat}(H::T, R::T) =
     LinearObserver(reshape([H],1,1), reshape([R],1,1))
+
+LinearObserver(H::Vector) = LinearObserver(reshape(H,length(H),1))
 LinearObserver{T<:AbstractFloat}(H::Vector{T}, R::Covariance{T}) =
     LinearObserver(reshape(H,length(H),1), R)
+
+LinearObserver(H::RowVector) = LinearObserver(Array(H))
 LinearObserver{T<:AbstractFloat}(H::RowVector{T}, R::T) =
     LinearObserver(Array(H), reshape([R],1,1))
 LinearObserver{T<:AbstractFloat}(H::RowVector{T}, R::Covariance{T}) =
@@ -43,16 +46,16 @@ LinearObserver{T<:AbstractFloat}(H::RowVector{T}, R::Covariance{T}) =
 
 
 """
+    NonlinearObserver(H::Function, dH_dx::Function, R::Matrix)
+    NonlinearObserver(H::Function, dH_dx::Function, R::AbstractFloat)
+
 Nonlinear observer with the form
 
-\$y_k = H(k, x_k) + v \\quad  \\text{where} \\quad v ~ N(0, R)\$
+\$y_k = H(k, x_k) + v \\quad  \\text{where} \\quad v \\sim N(0, R)\$
 
 NonlinearObserver constructors require both the measurement function,
 `H(t::Number, x::Vector)`, and its Jacobian, `dH_dx(t::Number, x::Vector)`. Both
 `H()` and `dH_dx()` must return a vector.
-
-    NonlinearObserver(H::Function, dH_dx::Function, R::Matrix)
-    NonlinearObserver(H::Function, dH_dx::Function, R::AbstractFloat)
 """
 struct NonlinearObserver{T<:AbstractFloat} <: AbstractObserver{T}
     H::Function
@@ -91,9 +94,11 @@ end
 
 
 """
-    observable(A, H)
+    observable(A::Matrix, H::Matrix)
+    observable(sys::LinearSystem, obs::LinearObserver)
 
-Evaluate the observability of a linear model.
+Evaluate the observability of a linear model. Returns a boolean True/False
+result.
 """
 function observable(A, H)
     n = size(A, 2)
@@ -105,22 +110,18 @@ function observable(A, H)
         observability[p*idx+1:p*(idx+1), :] .= H * A
     end
 
-    if rank(observability) == n
-        return true
-    else
-        return false
-    end
+    rank(observability) == n ? true : false
 end
-"""
-    observable(sys::LinearSystem{T}, obs::LinearObserver{T})
-"""
-function observable{T}(sys::LinearSystem{T}, obs::LinearObserver{T})
-    return observable(sys.A, obs.H)
-end
+observable(sys::LinearSystem, obs::LinearObserver) = observable(sys.A, obs.H)
 
 
 """
-    predict(obs::LinearObserver{T}, state::AbstractState{T})
+    predict(obs::AbstractObserver, state::AbstractState)
+
+Predict a state through an arbitrary observer. The `predict` method will advance
+both the state vector and, if necessary, its covariance through the input
+measurement model. For NonlinearObservers, the covariance prediction is only a
+linear approximation.
 """
 function predict(::AbstractObserver) end
 function predict{T}(obs::LinearObserver{T}, state::DiscreteState{T})
@@ -159,28 +160,18 @@ end
 """
    simulate(obs::AbstractObserver, state::AbstractState)
 
-Simulate a state observation.
+Simulate a state observation with initial state error and process noise. This
+method returns an absolute state by sampling the initial state (if uncertain),
+and propagating that state through the input system in the presence of
+measurement noise.
 """
 function simulate(::AbstractObserver) end
-function simulate{T}(obs::AbstractObserver{T}, state::AbstractAbsoluteState{T})
+function simulate(obs::AbstractObserver, state::AbstractAbsoluteState)
     return simulate(obs, make_uncertain(state))
 end
-function simulate{T}(obs::LinearObserver{T}, state::AbstractUncertainState{T})
+function simulate(obs::LinearObserver, state::AbstractUncertainState)
     return sample(predict(obs, state))
 end
-function simulate{T}(obs::NonlinearObserver{T},state::AbstractUncertainState{T})
+function simulate(obs::NonlinearObserver,state::AbstractUncertainState)
     return sample(predict(obs, make_uncertain(sample(state))))
-end
-
-
-"""
-    simulate(sys::AbstractSystem, obs::AbstractObserver, state::AbstractState, t)
-
-Simulate a combined state prediction and observation.
-"""
-function simulate{T}(sys::AbstractSystem{T}, obs::AbstractObserver{T},
-                     state::AbstractState{T}, t)
-   simulated_state = simulate(sys, state, t)
-   simulated_measurement = simulate(obs, simulated_state)
-   return simulated_state, simulated_measurement
 end

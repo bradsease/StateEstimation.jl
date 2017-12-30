@@ -6,22 +6,12 @@
 @test size(DiscreteState(1.0, 0).x) == (1,)
 @test size(UncertainDiscreteState(1.0, 2.0).x) == (1,)
 @test size(UncertainDiscreteState(1.0, 2.0, 0).P) == (1, 1)
-@test DiscreteState(1.0) == DiscreteState(UncertainDiscreteState(1.0, 2.0))
-@test UncertainDiscreteState(ones(2), eye(2)) ==
-    UncertainDiscreteState(DiscreteState(ones(2)), eye(2))
-@test UncertainDiscreteState(ones(2), zeros(2,2)) ==
-    UncertainDiscreteState(DiscreteState(ones(2)))
 
 # Continuous state constructors
 @test size(ContinuousState(1.0).x) == (1,)
 @test size(ContinuousState(1.0, 0.0).x) == (1,)
 @test size(UncertainContinuousState(1.0, 2.0).x) == (1,)
 @test size(UncertainContinuousState(1.0, 2.0, 0.0).P) == (1, 1)
-@test ContinuousState(1.0) == ContinuousState(UncertainContinuousState(1.0,2.0))
-@test UncertainContinuousState(ones(2), eye(2)) ==
-    UncertainContinuousState(ContinuousState(ones(2)), eye(2))
-@test UncertainContinuousState(ones(2), zeros(2,2)) ==
-    UncertainContinuousState(ContinuousState(ones(2)))
 
 # Create testing states
 discrete_state = DiscreteState(ones(2))

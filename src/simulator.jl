@@ -41,6 +41,18 @@ end
 
 
 """
+    simulate(sys::AbstractSystem, obs::AbstractObserver, state::AbstractState, t)
+
+Simulate a combined state prediction and observation.
+"""
+function simulate(sys::AbstractSystem, obs::AbstractObserver,
+                  state::AbstractState, t)
+   simulated_state = simulate(sys, state, t)
+   simulated_measurement = simulate(obs, simulated_state)
+   return simulated_state, simulated_measurement
+end
+
+"""
     simulate(ssm:SingleStateSimulator, t)
 
 Simulate a state and measurement for a given time using the internal model

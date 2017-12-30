@@ -18,12 +18,11 @@ makedocs(
                 "Systems" => "systems.md",
                 "Observers" => "observers.md"
             ],
-            "Sequential Estimators" => Any[
-                "Kalman Filter" => "kalman_filter.md",
-                "Extended Kalman Filter" => "extended_kalman.md",
-                "Unscented Kalman Filter" => "unscented_kalman.md"
+            "Sequential Estimation" => Any[
+                "Kalman Filtering" => "kalman_filter.md",
+                "Multi-Target Tracking" => "multi_target.md",
             ],
-            "Batch Estimators" => Any[
+            "Batch Estimation" => Any[
                 "Least Squares" => "least_squares.md",
             ]
         ]

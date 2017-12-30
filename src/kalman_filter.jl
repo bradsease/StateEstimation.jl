@@ -10,7 +10,26 @@ const AbstractContinuousKalmanFilter{T} =
     AbstractKalmanFilter{T,UncertainContinuousState{T}} where T
 
 """
-Standard Kalman Filter type
+    KalmanFilter(sys::LinearSystem, obs::LinearObserver,
+                 estimate::AbstractState[, consider_states::Vector{UInt}])
+
+Linear Kalman Filter type. The internal filter model takes on a specific form
+depending on the type of the initial estimate. For a `DiscreteState`,
+
+\$x_k = A x_{k-1} + w_k\$
+\$y_k = H x_k + v_k\$
+
+where \$w_k \\sim N(0, Q)\$ and \$v_k \\sim N(0, R)\$. For a `ContinuousState`,
+
+\$\\dot{x}(t_k) = A x(t_k) + w(t_k)\$
+\$y(t_k) = H x(t_k) + v(t_k)\$
+
+Construction of a KalmanFilter requires an initial estimate. Internally, the
+initial estimate is an uncertain state type. The constructor automatically
+converts absolute initial estimates to uncertain states with zero covariance.
+
+The `consider_states` input contains a list of indices of state elements to be
+considered in the filtering process and not updated.
 """
 immutable KalmanFilter{T,S<:AbstractUncertainState{T}} <: AbstractKalmanFilter{T,S}
     sys::LinearSystem{T}
@@ -18,12 +37,6 @@ immutable KalmanFilter{T,S<:AbstractUncertainState{T}} <: AbstractKalmanFilter{T
     estimate::S
     consider_states::Vector{UInt16}
 
-    function KalmanFilter(sys::LinearSystem{T}, obs::LinearObserver{T},
-                          estimate::S) where {T, S<:AbstractUncertainState{T}}
-        assert_compatibility(sys, estimate)
-        assert_compatibility(obs, estimate)
-        new{T,S}(sys, obs, estimate, [])
-    end
     function KalmanFilter(sys::LinearSystem{T}, obs::LinearObserver{T},
                           estimate::S, consider_states::Vector
                           ) where {T, S<:AbstractUncertainState{T}}
@@ -41,13 +54,16 @@ immutable KalmanFilter{T,S<:AbstractUncertainState{T}} <: AbstractKalmanFilter{T
         new{T,S}(sys, obs, estimate, consider_states)
     end
 end
-function KalmanFilter(sys::LinearSystem{T}, obs::LinearObserver{T},
-                      estimate::S) where {T, S<:AbstractAbsoluteState{T}}
+function KalmanFilter(sys::LinearSystem, obs::LinearObserver,
+                      estimate::AbstractUncertainState)
+    KalmanFilter(sys, obs, estimate, [])
+end
+function KalmanFilter(sys::LinearSystem, obs::LinearObserver,
+                      estimate::AbstractAbsoluteState)
     KalmanFilter(sys, obs, make_uncertain(estimate))
 end
-function KalmanFilter(sys::LinearSystem{T}, obs::LinearObserver{T},
-                      estimate::S, consider_states::Vector
-                      ) where {T, S<:AbstractAbsoluteState{T}}
+function KalmanFilter(sys::LinearSystem, obs::LinearObserver,
+                      estimate::AbstractAbsoluteState, consider_states::Vector)
     KalmanFilter(sys, obs, make_uncertain(estimate), consider_states)
 end
 
@@ -100,10 +116,16 @@ end
 
 
 """
-    process!(kf::KalmanFilter, zk::AbstractAbsoluteState)
+    process!(kf::AbstractKalmanFilter, zk::AbstractAbsoluteState[, archive::EstimatorHistory])
 
-Kalman filter correction step.
+Process a measurement with an arbitrary Kalman Filter. Predicts the filter's
+internal estimate to the time of the input measurement and performs a
+correction step.
+
+The user may optionally provide an `EstimatorHistory` archive variable to store
+the incremental state data produced during the process step.
 """
+function process!(::AbstractKalmanFilter) end
 function process!{T}(kf::AbstractDiscreteKalmanFilter{T}, zk::DiscreteState{T})
     xk, yk, Pxy = kalman_predict(kf, zk.t)
     kf.estimate .= xk
