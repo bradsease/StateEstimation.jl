@@ -3,10 +3,22 @@
 
 ## Example 1 - Linear Systems
 
+System types can describe both discrete-time and continuous-time dynamics,
+depending on the type of state the system is used with. Calling the `predict`
+method for a `LinearSystem` with a `DiscreteState` causes the system to be
+treated as discrete and calling `predict` with a `ContinuousState` causes the
+system to be continuous. In this example, we will look at both types of
+`LinearSystem`.
+
+The code block below demonstrates an implementation of the following
+continuous-time model.
 
 $\dot{x}(t) = -x(t)$
 
-solve for `t = 2.0`
+We will use a `LinearSystem` with a `ContinuousState` to model these dynamics.
+Assuming the initial `ContinuousState` has a value of `2.0` at `t = 0.0`, we
+will use the `predict` method to determine the value of the state at time
+`t = 2.0`.
 
 ```jldoctest
 julia> using StateEstimation

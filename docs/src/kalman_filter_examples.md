@@ -1,6 +1,6 @@
-# Kalman Filtering
+# Linear Filtering
 
-## Example 1 - Scalar Discrete Linear Kalman Filter
+## Example 1 - Kalman Filter with Discrete Dynamics (Scalar)
 
 In this example, we will create a KalmanFilter to estimate the state of the
 scalar system
@@ -47,7 +47,7 @@ end
 ```
 
 
-## Example 2 - Discrete Linear Kalman Filter
+## Example 2 - Kalman Filter with Discrete Dynamics
 
 In this example, we will create a KalmanFilter to estimate the state of the
 system
@@ -97,7 +97,7 @@ end
 
 ```
 
-## Example 3 - Continuous Linear Kalman Filter
+## Example 3 - Kalman Filter with Continuous Dynamics
 
 In this example, we will create a KalmanFilter to estimate the state of the
 system
@@ -106,7 +106,7 @@ $\dot{x}(t_k) = \left[\begin{array}{cc} 0 & 1 \\ -1 & 0 \end{array} \right] x(t_
 
 with the observer
 
-$y(t_k) = \left[\begin{array}{cc} 1 & 0 \\ 0 & 0 \end{array} \right] x(t_k) + v(t_k)$
+$y(t_k) = \left[\begin{array}{cc} 1 & 0 \end{array} \right] x(t_k) + v(t_k)$
 
 with $v(t_k) \sim N(0, R)$. This example requires us to build a `LinearSystem`,
 a `LinearObserver`, an initial `UncertainContinuousState`, and a `KalmanFilter`.
