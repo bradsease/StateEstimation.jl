@@ -15,7 +15,7 @@ Linear system of equations. Systems take a specific form depending on the type
 of state they are used in conjunction with. With a `DiscreteState`, the system
 takes on a discrete form
 
-\$x_k = A x_{k-1} + w_k \\quad \\text{where} \\quad w_k \\sim N(0, Q)\$
+\$x_k = A x_{k-1} + w_{k-1} \\quad \\text{where} \\quad w_{k-1} \\sim N(0, Q)\$
 
 With a `ContinuousState`, the system takes on a continous ODE form
 
@@ -54,11 +54,11 @@ Nonlinear system of equations. Systems take a specific form depending on the
 type of state they are used in conjunction with. With a `DiscreteState`, the
 system takes on a discrete form
 
-\$x_k = F(k, x_{k-1}) + w \\quad \\text{where} \\quad w \\sim N(0, Q)\$
+\$x_k = F(k-1, x_{k-1}) + w_{k-1} \\quad \\text{where} \\quad w_{k-1} \\sim N(0, Q)\$
 
 With a `ContinuousState`, the system takes on a continous ODE form
 
-\$\\dot{x}(t) = F(t, x(t)) + w \\quad \\text{where} \\quad w \\sim N(0, Q)\$
+\$\\dot{x}(t) = F(t, x(t)) + w(t) \\quad \\text{where} \\quad w(t) \\sim N(0, Q)\$
 
 NonlinearSystem constructors require both the function,
 `F(t::Number, x::Vector)`, and its Jacobian, `dF_dx(t::Number, x::Vector)`. Both
