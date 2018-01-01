@@ -37,7 +37,7 @@ for idx = 1:10
     true_state, measurement = simulate(simulator, (idx-1)*0.1)
     add!(lse, measurement)
 end
-archive = EstimatorHistory()
+archive = EstimatorHistory(lse)
 @test distance(solve(lse, archive), initial_est) < 0.2
 @test (length(archive.states) == 10) & (length(archive.residuals) == 10)
 
@@ -72,7 +72,7 @@ for idx = 1:10
     push!(measurements, measurement)
 end
 add!(lse, measurements)
-archive = EstimatorHistory()
+archive = EstimatorHistory(lse)
 solve!(lse, archive)
 @test distance(lse.estimate, initial_est) < 0.2
 @test (length(archive.states) == 10) & (length(archive.residuals) == 10)

@@ -3,19 +3,31 @@
 #
 using Plots
 
-immutable EstimatorHistory{T<:AbstractFloat}
-    states::Vector{AbstractUncertainState{T}}
-    residuals::Vector{AbstractUncertainState{T}}
+
+"""
+    EstimatorHistory(target_estimator::Estimator)
+
+Estimation history archival type.
+"""
+immutable EstimatorHistory{T<:AbstractFloat, S<:AbstractUncertainState{T}}
+    states::Vector{S}
+    residuals::Vector{S}
+
+    function EstimatorHistory(target_estimator::Estimator{T,S}) where {T,S}
+        new{T,S}([], [])
+    end
 end
 
-function EstimatorHistory()
-    EstimatorHistory{Float64}([], [])
-end
 
-function plot_archive{T}(archive::EstimatorHistory{T})
+"""
+    plot_archive(archive::EstimatorHistory)
+
+Plot the contents of an estimator history archive.
+"""
+function plot_archive(archive::EstimatorHistory)
     t = archive.states[1].t
-    data::Array{T,2} = archive.states[1].x'
-    cov::Array{T,2} = diag(chol(Hermitian(archive.states[1].P)))'
+    data = archive.states[1].x'
+    cov = diag(chol(Hermitian(archive.states[1].P)))'
 
     for i = 1:length(archive.states)
         t = vcat(t, archive.states[i].t)

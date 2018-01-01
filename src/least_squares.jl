@@ -28,7 +28,7 @@ covariance.
 or its covariance in solving for a new estimate.
 """
 immutable LeastSquaresEstimator{T,S<:AbstractUncertainState{T},
-                            M<:AbstractAbsoluteState{T}} <: BatchEstimator{T}
+                            M<:AbstractAbsoluteState{T}} <: BatchEstimator{T,S}
     sys::LinearSystem{T}
     obs::LinearObserver{T}
     estimate::S

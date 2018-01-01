@@ -29,9 +29,9 @@ export
     SingleStateSimulator, make_simulator
 
 
-abstract type Estimator end
-abstract type SequentialEstimator{T,S} <: Estimator end
-abstract type BatchEstimator{T} <: Estimator end
+abstract type Estimator{T,S} end
+abstract type SequentialEstimator{T,S} <: Estimator{T,S} end
+abstract type BatchEstimator{T,S} <: Estimator{T,S} end
 
 
 include("states.jl")
