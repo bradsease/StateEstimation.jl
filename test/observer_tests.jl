@@ -11,6 +11,7 @@
 @test size(LinearObserver(ones(3)').R) == (1,1)
 @test size(LinearObserver(ones(3)', 1.0).R) == (1,1)
 @test size(LinearObserver(ones(3)', ones(1,1)').R) == (1,1)
+@test size(LinearObserver(ones(3)', 0.1).H) == (1,3)
 
 # Test compatibility methods
 lin_obs = LinearObserver(ones(2,2), eye(2))

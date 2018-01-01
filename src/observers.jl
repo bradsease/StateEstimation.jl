@@ -33,6 +33,8 @@ LinearObserver{T<:AbstractFloat}(H::T) =
     LinearObserver(reshape([H],1,1), zeros(T,1,1))
 LinearObserver{T<:AbstractFloat}(H::T, R::T) =
     LinearObserver(reshape([H],1,1), reshape([R],1,1))
+LinearObserver{T<:AbstractFloat}(H::Matrix{T}, R::T) =
+    LinearObserver(H, reshape([R],1,1))
 
 LinearObserver(H::Vector) = LinearObserver(reshape(H,length(H),1))
 LinearObserver{T<:AbstractFloat}(H::Vector{T}, R::Covariance{T}) =

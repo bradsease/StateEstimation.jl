@@ -123,8 +123,8 @@ A = [[0.0, 1.0] [-1.0, 0.0]]
 linear_sys = LinearSystem(A)
 
 # Define the observer
-H = [[1.0, 0.0] [0.0, 0.0]]
-R = 0.1*eye(2)
+H = [1.0 0.0]
+R = 0.1
 linear_obs = LinearObserver(H, R)
 
 # Define the initial state
