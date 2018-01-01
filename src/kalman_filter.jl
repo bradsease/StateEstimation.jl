@@ -126,14 +126,14 @@ The user may optionally provide an `EstimatorHistory` archive variable to store
 the incremental state data produced during the process step.
 """
 function process!(::AbstractKalmanFilter) end
-function process!{T}(kf::AbstractDiscreteKalmanFilter{T}, zk::DiscreteState{T})
+function process!(kf::AbstractDiscreteKalmanFilter, zk::DiscreteState)
     xk, yk, Pxy = kalman_predict(kf, zk.t)
     kf.estimate .= xk
     kalman_update!(kf, yk, zk, Pxy)
     return nothing
 end
-function process!{T}(kf::AbstractDiscreteKalmanFilter{T}, zk::DiscreteState{T},
-                     archive::EstimatorHistory{T})
+function process!(kf::AbstractDiscreteKalmanFilter, zk::DiscreteState,
+                  archive::EstimatorHistory)
     xk, yk, Pxy = kalman_predict(kf, zk.t)
     kf.estimate .= xk
     kalman_update!(kf, yk, zk, Pxy)
@@ -145,14 +145,14 @@ function process!{T}(kf::AbstractDiscreteKalmanFilter{T}, zk::DiscreteState{T},
     push!(archive.residuals, UncertainDiscreteState(zk.x - yk.x, yk.P, zk.t))
     return nothing
 end
-function process!{T}(kf::AbstractContinuousKalmanFilter{T}, zk::ContinuousState{T})
+function process!(kf::AbstractContinuousKalmanFilter, zk::ContinuousState)
     xk, yk, Pxy = kalman_predict(kf, zk.t)
     kf.estimate .= xk
     kalman_update!(kf, yk, zk, Pxy)
     return nothing
 end
-function process!{T}(kf::AbstractContinuousKalmanFilter{T}, zk::ContinuousState{T},
-                     archive::EstimatorHistory{T})
+function process!(kf::AbstractContinuousKalmanFilter, zk::ContinuousState,
+                  archive::EstimatorHistory)
     xk, yk, Pxy = kalman_predict(kf, zk.t)
     kf.estimate .= xk
     kalman_update!(kf, yk, zk, Pxy)

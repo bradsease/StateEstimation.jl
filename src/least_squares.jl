@@ -76,7 +76,7 @@ end
 Compute residuals for all internal measurements, returning a Vector of
 residual states.
 """
-function compute_residuals!{T,S}(residuals::Vector,
+function compute_residuals!{T,S}(residuals::Vector{S},
                                  lse::LeastSquaresEstimator{T,S},
                                  initial_state::S)
     for idx = 1:length(lse.measurements)
@@ -96,7 +96,7 @@ compute_residuals!(residuals::Vector, lse::LeastSquaresEstimator) =
 
 Compute states for all internal measurements, returning a Vector.
 """
-function compute_states!{T,S}(state_history::Vector,
+function compute_states!{T,S}(state_history::Vector{S},
                               lse::LeastSquaresEstimator{T,S},
                               initial_state::S)
     for idx = 1:length(lse.measurements)
@@ -144,7 +144,7 @@ function solve{T}(lse::LeastSquaresEstimator{T})
 
     return estimate
 end
-function solve{T}(lse::LeastSquaresEstimator{T}, archive::EstimatorHistory{T})
+function solve(lse::LeastSquaresEstimator, archive::EstimatorHistory)
     estimate = solve(lse)
     compute_residuals!(archive.residuals, lse, estimate)
     compute_states!(archive.states, lse, estimate)
