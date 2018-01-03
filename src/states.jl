@@ -64,6 +64,11 @@ UncertainDiscreteState{T<:AbstractFloat}(x::T, P::T) =
 UncertainDiscreteState{T<:AbstractFloat}(x::T, P::T, t) =
     UncertainDiscreteState([x], reshape([P],1,1), t)
 
+"""
+Union of Discrete state types (absolute and uncertain).
+"""
+const UnionDiscrete{T} = Union{DiscreteState{T}, UncertainDiscreteState{T}} where T
+
 
 """
     ContinuousState(x::Vector[, t::AbstractFloat])
@@ -120,6 +125,11 @@ UncertainContinuousState{T<:AbstractFloat}(x::T, P::T) =
     UncertainContinuousState([x], reshape([P],1,1))
 UncertainContinuousState{T<:AbstractFloat}(x::T, P::T, t::T) =
     UncertainContinuousState([x], reshape([P],1,1), t)
+    
+"""
+Union of Continuous state types (absolute and uncertain).
+"""
+const UnionContinuous{T} = Union{ContinuousState{T}, UncertainContinuousState{T}} where T
 
 
 """

@@ -117,19 +117,19 @@ function state_transition_matrix{T}(sys::LinearSystem{T},
     assert_compatibility(sys, state)
     return expm(sys.A*(t-state.t))
 end
-function state_transition_matrix{T}(sys::NonlinearSystem{T},
-                                    state::ContinuousState{T}, t::T)
-    function stm_ode(t, u, du)
-        du[:,1] .= sys.F(t, u[:,1])
-        du[:,2:end] .= sys.dF_dx(t, u[:,1])*u[:,2:end]
+function state_transition_matrix{T,S<:UnionDiscrete{T}}(sys::NonlinearSystem{T},
+                                                        state::S, t::Integer)
+    x = state.x
+    stm = eye(length(x))
+    for t = state.t:t-1
+        stm = sys.dF_dx(t, x)*stm
+        x = sys.F(t, x)
     end
-    initial_state = hcat(state.x, eye(T, length(state.x)))
-    problem = ODEProblem(stm_ode, initial_state, (state.t, t))
-    solution = DifferentialEquations.solve(problem, reltol=1e-6, abstol=1e-6)
-    return solution.u[end][:, 2:end]
+    #return DiscreteState(x, t), stm
+    return stm
 end
-function state_transition_matrix{T}(sys::NonlinearSystem{T},
-                                    state::UncertainContinuousState{T}, t::T)
+function state_transition_matrix{T,S<:UnionContinuous{T}}(
+    sys::NonlinearSystem{T}, state::S, t::T)
     function stm_ode(t, u, du)
         du[:,1] .= sys.F(t, u[:,1])
         du[:,2:end] .= sys.dF_dx(t, u[:,1])*u[:,2:end]

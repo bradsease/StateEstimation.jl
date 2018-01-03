@@ -76,10 +76,10 @@ NonlinearSystem(discrete_nl_fcn, discrete_nl_jac, eye(2))
 continuous_nl_fcn(t, x::Vector) = -x.^2;
 continuous_nl_jac(t, x::Vector) = -diagm(2*x)
 continuous_state = ContinuousState(ones(2))
-uncertain_continuous_state = UncertainContinuousState(ones(2), eye(2))
+discrete_state = DiscreteState(ones(2))
 nonlin_sys = NonlinearSystem(continuous_nl_fcn, continuous_nl_jac, eye(2))
 @test size(state_transition_matrix(nonlin_sys, continuous_state, 1.0)) == (2,2)
-@test size(state_transition_matrix(nonlin_sys, uncertain_continuous_state, 1.0)) == (2,2)
+@test size(state_transition_matrix(nonlin_sys, discrete_state, 1)) == (2,2)
 
 # Test nonlinear discrete prediction methods
 nonlin_sys = NonlinearSystem(discrete_nl_fcn, discrete_nl_jac, eye(3))
