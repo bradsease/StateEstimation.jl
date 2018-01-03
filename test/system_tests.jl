@@ -72,6 +72,15 @@ discrete_nl_jac(t, x::Vector) = diagm(2*x)
 NonlinearSystem(discrete_nl_fcn, discrete_nl_jac, 1.0)
 NonlinearSystem(discrete_nl_fcn, discrete_nl_jac, eye(2))
 
+# Test state transtion matrix methods
+continuous_nl_fcn(t, x::Vector) = -x.^2;
+continuous_nl_jac(t, x::Vector) = -diagm(2*x)
+continuous_state = ContinuousState(ones(2))
+uncertain_continuous_state = UncertainContinuousState(ones(2), eye(2))
+nonlin_sys = NonlinearSystem(continuous_nl_fcn, continuous_nl_jac, eye(2))
+@test size(state_transition_matrix(nonlin_sys, continuous_state, 1.0)) == (2,2)
+@test size(state_transition_matrix(nonlin_sys, uncertain_continuous_state, 1.0)) == (2,2)
+
 # Test nonlinear discrete prediction methods
 nonlin_sys = NonlinearSystem(discrete_nl_fcn, discrete_nl_jac, eye(3))
 @test predict(nonlin_sys, UncertainDiscreteState([0.0, 1.0, 2.0], eye(3)), 1) ==

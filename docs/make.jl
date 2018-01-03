@@ -25,6 +25,7 @@ makedocs(
             ],
             "Batch Estimation" => Any[
                 "Least Squares" => "least_squares.md",
-            ]
+            ],
+            "Simulation" => "simulation.md"
         ]
     ])

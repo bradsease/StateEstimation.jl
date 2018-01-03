@@ -26,7 +26,7 @@ export
     # Multi-target filtering
     MultiTargetFilter, NearestNeighborMTF,
     # Simulation
-    SingleStateSimulator, make_simulator
+    SingleStateSimulator, MultiStateSimulator, make_simulator
 
 
 abstract type Estimator{T,S} end

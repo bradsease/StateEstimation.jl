@@ -117,6 +117,28 @@ function state_transition_matrix{T}(sys::LinearSystem{T},
     assert_compatibility(sys, state)
     return expm(sys.A*(t-state.t))
 end
+function state_transition_matrix{T}(sys::NonlinearSystem{T},
+                                    state::ContinuousState{T}, t::T)
+    function stm_ode(t, u, du)
+        du[:,1] .= sys.F(t, u[:,1])
+        du[:,2:end] .= sys.dF_dx(t, u[:,1])*u[:,2:end]
+    end
+    initial_state = hcat(state.x, eye(T, length(state.x)))
+    problem = ODEProblem(stm_ode, initial_state, (state.t, t))
+    solution = DifferentialEquations.solve(problem, reltol=1e-6, abstol=1e-6)
+    return solution.u[end][:, 2:end]
+end
+function state_transition_matrix{T}(sys::NonlinearSystem{T},
+                                    state::UncertainContinuousState{T}, t::T)
+    function stm_ode(t, u, du)
+        du[:,1] .= sys.F(t, u[:,1])
+        du[:,2:end] .= sys.dF_dx(t, u[:,1])*u[:,2:end]
+    end
+    initial_state = hcat(state.x, eye(T, length(state.x)))
+    problem = ODEProblem(stm_ode, initial_state, (state.t, t))
+    solution = DifferentialEquations.solve(problem, reltol=1e-6, abstol=1e-6)
+    return solution.u[end][:, 2:end]
+end
 
 
 """
