@@ -76,3 +76,25 @@ archive = EstimatorHistory(lse)
 solve!(lse, archive)
 @test distance(lse.estimate, initial_est) < 0.2
 @test (length(archive.states) == 10) & (length(archive.residuals) == 10)
+
+
+
+# Test continuous-time nonlinear least squares
+discrete_nl_fcn(t, x::Vector) = -x;
+discrete_nl_jac(t, x::Vector) = -eye(length(x))
+nonlin_sys = NonlinearSystem(discrete_nl_fcn, discrete_nl_jac, 0.000001*eye(2))
+discrete_nl_fcn(t, x::Vector) = x;
+discrete_nl_jac(t, x::Vector) = eye(length(x))
+nonlin_obs = NonlinearObserver(discrete_nl_fcn, discrete_nl_jac, 0.0*eye(2))
+initial_est = UncertainContinuousState([1.0, 3.0], eye(2))
+nlse = NonlinearLeastSquaresEstimator(nonlin_sys, nonlin_obs, initial_est)
+simulator = make_simulator(nlse)
+for idx = 1:10
+    true_state, measurement = simulate(simulator, idx*0.1)
+    add!(nlse, measurement)
+    if idx == 1
+        println(true_state)
+    end
+end
+solve!(nlse)
+println(nlse.estimate)

@@ -49,21 +49,46 @@ end
 
 
 """
-    add!(lse::LeastSquaresEstimator, measurement::AbstractAbsoluteState)
-    add!(lse::LeastSquaresEstimator, measurements::Vector{AbstractAbsoluteState})
-
-Add one or more measurements to a `LeastSquaresEstimator` for future processing.
-The `LeastSquaresEstimator` will store these measurements internally.
+    NonlinearLeastSquaresEstimator(sys::NonlinearSystem, obs::NonlinearObserver,
+                                   estimate::AbstractState)
 """
-function add!(::LeastSquaresEstimator) end
-function add!(lse::LeastSquaresEstimator, measurement::AbstractAbsoluteState)
-    assert_compatibility(measurement, lse.obs)
-    push!(lse.measurements, measurement)
+immutable NonlinearLeastSquaresEstimator{T,S<:AbstractUncertainState{T},
+                            M<:AbstractAbsoluteState{T}} <: BatchEstimator{T,S}
+    sys::NonlinearSystem{T}
+    obs::NonlinearObserver{T}
+    estimate::S
+    measurements::Vector{M}
+    tolerance::T
+
+    function NonlinearLeastSquaresEstimator(sys::NonlinearSystem{T},
+        obs::NonlinearObserver{T}, estimate::S, tol=1e-2
+        ) where {T,S<:AbstractUncertainState{T}}
+        M = absolute_type(estimate)
+        new{T,S,M}(sys, obs, estimate, Vector{M}([]), tol)
+    end
+end
+function NonlinearLeastSquaresEstimator(sys::NonlinearSystem,
+    obs::NonlinearObserver, estimate::AbstractAbsoluteState, tol=1e-2)
+    NonlinearLeastSquaresEstimator(sys, obs, make_uncertain(estimate), tol)
+end
+
+
+"""
+    add!(estimator::BatchEstimator, measurement::AbstractAbsoluteState)
+    add!(estimator::BatchEstimator, measurements::Vector{AbstractAbsoluteState})
+
+Add one or more measurements to a `BatchEstimator` for future processing. The
+`BatchEstimator` will store these measurements internally.
+"""
+function add!(::BatchEstimator) end
+function add!(estimator::BatchEstimator, measurement::AbstractAbsoluteState)
+    assert_compatibility(measurement, estimator.obs)
+    push!(estimator.measurements, measurement)
     return nothing
 end
-function add!(lse::LeastSquaresEstimator, measurements::Vector)
+function add!(estimator::BatchEstimator, measurements::Vector)
     for idx = 1:length(measurements)
-        add!(lse, measurements[idx])
+        add!(estimator, measurements[idx])
     end
     return nothing
 end
@@ -77,18 +102,18 @@ Compute residuals for all internal measurements, returning a Vector of
 residual states.
 """
 function compute_residuals!{T,S}(residuals::Vector{S},
-                                 lse::LeastSquaresEstimator{T,S},
+                                 estimator::BatchEstimator{T,S},
                                  initial_state::S)
-    for idx = 1:length(lse.measurements)
-        pred_measurement = predict(lse.obs,
-            predict(lse.sys, initial_state, lse.measurements[idx].t))
-        pred_measurement .-= lse.measurements[idx].x
+    for idx = 1:length(estimator.measurements)
+        pred_measurement = predict(estimator.obs, predict(
+            estimator.sys, initial_state, estimator.measurements[idx].t))
+        pred_measurement .-= estimator.measurements[idx].x
         push!(residuals, pred_measurement)
     end
     return nothing
 end
-compute_residuals!(residuals::Vector, lse::LeastSquaresEstimator) =
-    compute_residuals!(residuals, lse, lse.estimate)
+compute_residuals!(residuals::Vector, estimator::BatchEstimator) =
+    compute_residuals!(residuals, estimator, estimator.estimate)
 
 
 """
@@ -97,16 +122,17 @@ compute_residuals!(residuals::Vector, lse::LeastSquaresEstimator) =
 Compute states for all internal measurements, returning a Vector.
 """
 function compute_states!{T,S}(state_history::Vector{S},
-                              lse::LeastSquaresEstimator{T,S},
+                              estimator::BatchEstimator{T,S},
                               initial_state::S)
-    for idx = 1:length(lse.measurements)
-        pred_state = predict(lse.sys, initial_state, lse.measurements[idx].t)
+    for idx = 1:length(estimator.measurements)
+        pred_state = predict(
+            estimator.sys, initial_state, estimator.measurements[idx].t)
         push!(state_history, pred_state)
     end
     return nothing
 end
-compute_states!(state_history::Vector, lse::LeastSquaresEstimator) =
-    compute_states(state_history, lse, lse.estimate)
+compute_states!(state_history::Vector, estimator::BatchEstimator) =
+    compute_states(state_history, estimator, estimator.estimate)
 
 
 """
@@ -120,6 +146,7 @@ of the `LeastSquaresEstimator` in-place.
 Optionally provide an `EstimatorHistory` archive variable to store intermediate
 solution data.
 """
+function solve(::BatchEstimator) end
 function solve{T}(lse::LeastSquaresEstimator{T})
     m = size(lse.obs.H, 1)
     n = length(lse.estimate.x)
@@ -144,10 +171,50 @@ function solve{T}(lse::LeastSquaresEstimator{T})
 
     return estimate
 end
-function solve(lse::LeastSquaresEstimator, archive::EstimatorHistory)
-    estimate = solve(lse)
-    compute_residuals!(archive.residuals, lse, estimate)
-    compute_states!(archive.states, lse, estimate)
+function solve{T}(nlse::NonlinearLeastSquaresEstimator{T})
+    m = size(nlse.measurements[1].x, 1)
+    n = length(nlse.estimate.x)
+    A = zeros(T, n, m*length(nlse.measurements))
+    b = zeros(T, m*length(nlse.measurements))
+    C = spzeros(T, m*length(nlse.measurements), m*length(nlse.measurements))
+    estimate = deepcopy(nlse.estimate)
+    convergence = 1.0e12
+    iteration_count = 100
+    temp = zeros(T, n, m)
+
+    while convergence > nlse.tolerance && iteration_count > 0
+        for idx = 1:length(nlse.measurements)
+            start_idx = (idx-1)*m + 1
+            end_idx = start_idx + m - 1
+
+            t = nlse.measurements[idx].t
+            predicted_measurement =
+                predict(nlse.obs, predict(nlse.sys, estimate, t))
+
+            A[:, start_idx:end_idx] .= state_transition_matrix(nlse.sys,
+                estimate, t)' * nlse.obs.dH_dx(t, estimate.x)'
+            b[start_idx:end_idx] .=
+                nlse.measurements[idx].x - predicted_measurement.x
+            C[start_idx:end_idx, start_idx:end_idx] .= nlse.obs.R
+        end
+
+        temp = inv(A*A')*A
+        delta = temp * b
+        estimate.x += delta
+
+        convergence = norm(delta ./ estimate.x)
+        iteration_count -= 1
+
+        println(convergence)
+    end
+
+    estimate.P = temp * C * temp'
+    return estimate
+end
+function solve(estimator::BatchEstimator, archive::EstimatorHistory)
+    estimate = solve(estimator)
+    compute_residuals!(archive.residuals, estimator, estimate)
+    compute_states!(archive.states, estimator, estimate)
     return estimate
 end
 
@@ -155,11 +222,11 @@ end
 """
     solve!(lse:LeastSquaresEstimator[, archive::EstimatorHistory])
 """
-function solve!(lse::LeastSquaresEstimator)
-    lse.estimate .= solve(lse)
+function solve!(estimator::BatchEstimator)
+    estimator.estimate .= solve(estimator)
     return nothing
 end
-function solve!(lse::LeastSquaresEstimator, archive::EstimatorHistory)
-    lse.estimate .= solve(lse, archive)
+function solve!(estimator::BatchEstimator, archive::EstimatorHistory)
+    estimator.estimate .= solve(estimator, archive)
     return nothing
 end

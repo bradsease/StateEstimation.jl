@@ -88,8 +88,8 @@ end
 
 Require linear observer dimensions to be left-compatible with input state.
 """
-function assert_compatibility{T}(state::AbstractState{T},obs::LinearObserver{T})
-    if size(obs.H, 1) != length(state.x)
+function assert_compatibility{T}(state::AbstractState{T},obs::AbstractObserver{T})
+    if size(obs.R, 1) != length(state.x)
         throw(DimensionMismatch("Observer incompatible with input state."))
     end
 end

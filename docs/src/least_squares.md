@@ -10,9 +10,9 @@ LeastSquaresEstimator
 ## Methods
 
 ```@docs
-add!(::LeastSquaresEstimator)
+add!(::BatchEstimator)
 ```
 
 ```@docs
-solve{T}(::LeastSquaresEstimator{T})
+solve(::BatchEstimator)
 ```

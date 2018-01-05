@@ -22,7 +22,7 @@ export
     AbstractKalmanFilter, KalmanFilter, ExtendedKalmanFilter, simulate,
     process!, inaccurate_simulate,
     # Least squares estimation
-    LeastSquaresEstimator, add!, solve, solve!,
+    LeastSquaresEstimator, NonlinearLeastSquaresEstimator, add!, solve, solve!,
     # Multi-target filtering
     MultiTargetFilter, NearestNeighborMTF,
     # Simulation
