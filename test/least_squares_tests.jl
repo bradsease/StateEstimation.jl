@@ -14,41 +14,44 @@ lse = LeastSquaresEstimator(linear_sys, linear_obs, initial_est)
 
 # Test continuous-time linear least squares
 srand(1)
-linear_sys = LinearSystem(-eye(2), 0.001*eye(2))
+linear_sys = LinearSystem(-eye(2), 0.0001*eye(2))
 linear_obs = LinearObserver(eye(2), 0.01*eye(2))
 initial_est = UncertainContinuousState([1.0, 2.0], 0.1*eye(2))
 lse = LeastSquaresEstimator(linear_sys, linear_obs, initial_est)
 simulator = make_simulator(lse)
+correct_solution = deepcopy(simulator.true_state)
 for idx = 1:10
     true_state, measurement = simulate(simulator, (idx-1)*0.1)
     add!(lse, measurement)
 end
-@test distance(solve(lse), initial_est) < 0.2
+@test mahalanobis(correct_solution, solve(lse)) < 3
 
 
 # Test continuous-time linear least squares with archiving
 srand(1)
-linear_sys = LinearSystem(-eye(2), 0.001*eye(2))
+linear_sys = LinearSystem(-eye(2), 0.0001*eye(2))
 linear_obs = LinearObserver(eye(2), 0.01*eye(2))
 initial_est = UncertainContinuousState([1.0, 2.0], 0.1*eye(2))
 lse = LeastSquaresEstimator(linear_sys, linear_obs, initial_est)
 simulator = make_simulator(lse)
+correct_solution = deepcopy(simulator.true_state)
 for idx = 1:10
     true_state, measurement = simulate(simulator, (idx-1)*0.1)
     add!(lse, measurement)
 end
 archive = EstimatorHistory(lse)
-@test distance(solve(lse, archive), initial_est) < 0.2
+@test mahalanobis(correct_solution, solve(lse, archive)) < 3
 @test (length(archive.states) == 10) & (length(archive.residuals) == 10)
 
 
 # Test discrete-time linear least squares
 srand(1)
-linear_sys = LinearSystem(eye(3), 0.001*eye(3))
+linear_sys = LinearSystem(eye(3), 0.0001*eye(3))
 linear_obs = LinearObserver(eye(3), 0.01*eye(3))
 initial_est = UncertainDiscreteState([1.0, 2.0, 3.0], 0.1*eye(3))
 lse = LeastSquaresEstimator(linear_sys, linear_obs, initial_est)
 simulator = make_simulator(lse)
+correct_solution = deepcopy(simulator.true_state)
 measurements = []
 for idx = 1:10
     true_state, measurement = simulate(simulator, idx-1)
@@ -56,16 +59,17 @@ for idx = 1:10
 end
 add!(lse, measurements)
 solve!(lse)
-@test distance(lse.estimate, initial_est) < 0.2
+@test mahalanobis(correct_solution, lse.estimate) < 3
 
 
 # Test discrete-time linear least squares with archiving
 srand(1)
-linear_sys = LinearSystem(eye(3), 0.001*eye(3))
+linear_sys = LinearSystem(eye(3), 0.0001*eye(3))
 linear_obs = LinearObserver(eye(3), 0.01*eye(3))
 initial_est = UncertainDiscreteState([1.0, 2.0, 3.0], 0.1*eye(3))
 lse = LeastSquaresEstimator(linear_sys, linear_obs, initial_est)
 simulator = make_simulator(lse)
+correct_solution = deepcopy(simulator.true_state)
 measurements = []
 for idx = 1:10
     true_state, measurement = simulate(simulator, idx-1)
@@ -74,27 +78,26 @@ end
 add!(lse, measurements)
 archive = EstimatorHistory(lse)
 solve!(lse, archive)
-@test distance(lse.estimate, initial_est) < 0.2
+@test mahalanobis(correct_solution, lse.estimate) < 3
 @test (length(archive.states) == 10) & (length(archive.residuals) == 10)
 
 
 
 # Test continuous-time nonlinear least squares
-discrete_nl_fcn(t, x::Vector) = -x;
-discrete_nl_jac(t, x::Vector) = -eye(length(x))
-nonlin_sys = NonlinearSystem(discrete_nl_fcn, discrete_nl_jac, 0.000001*eye(2))
-discrete_nl_fcn(t, x::Vector) = x;
-discrete_nl_jac(t, x::Vector) = eye(length(x))
-nonlin_obs = NonlinearObserver(discrete_nl_fcn, discrete_nl_jac, 0.0*eye(2))
+srand(1)
+nl_sys_fcn(t, x::Vector) = -x;
+nl_sys_jac(t, x::Vector) = -eye(length(x))
+nonlin_sys = NonlinearSystem(nl_sys_fcn, nl_sys_jac, 0.0001*eye(2))
+nl_obs_fcn(t, x::Vector) = x;
+nl_obs_jac(t, x::Vector) = eye(length(x))
+nonlin_obs = NonlinearObserver(nl_obs_fcn, nl_obs_jac, 0.01*eye(2))
 initial_est = UncertainContinuousState([1.0, 3.0], eye(2))
-nlse = NonlinearLeastSquaresEstimator(nonlin_sys, nonlin_obs, initial_est)
+nlse = NonlinearLeastSquaresEstimator(nonlin_sys, nonlin_obs, initial_est, 1e-4)
 simulator = make_simulator(nlse)
+correct_solution = deepcopy(simulator.true_state)
 for idx = 1:10
     true_state, measurement = simulate(simulator, idx*0.1)
     add!(nlse, measurement)
-    if idx == 1
-        println(true_state)
-    end
 end
 solve!(nlse)
-println(nlse.estimate)
+@test mahalanobis(correct_solution, nlse.estimate) < 3

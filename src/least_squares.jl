@@ -201,11 +201,9 @@ function solve{T}(nlse::NonlinearLeastSquaresEstimator{T})
         temp = inv(A*A')*A
         delta = temp * b
         estimate.x += delta
-
         convergence = norm(delta ./ estimate.x)
         iteration_count -= 1
-
-        println(convergence)
+        #println(convergence)
     end
 
     estimate.P = temp * C * temp'
