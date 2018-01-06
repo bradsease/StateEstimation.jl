@@ -289,7 +289,7 @@ end
 
 
 """
-    simulate(sys::AbstractSystem, state::AbstractState, t::Number)
+    simulate(sys::AbstractSystem, state::AbstractState, t::Real)
 
 Simulate a state prediction with initial state error and process noise. This
 method returns an absolute state by sampling the initial state (if uncertain),
@@ -297,21 +297,21 @@ and propagating that state through the input system in the presence of process
 noise.
 """
 function simulate(::AbstractSystem) end
-function simulate{T}(sys::AbstractSystem{T}, state::AbstractAbsoluteState{T}, t)
+function simulate(sys::AbstractSystem, state::AbstractAbsoluteState, t::Real)
     return simulate(sys, make_uncertain(state), t)
 end
-function simulate{T}(sys::LinearSystem{T}, state::AbstractUncertainState{T}, t)
+function simulate(sys::LinearSystem, state::AbstractUncertainState, t::Real)
     return sample(predict(sys, state, t))
 end
-function simulate{T}(sys::NonlinearSystem{T},state::UncertainDiscreteState{T},t)
+function simulate(sys::NonlinearSystem, state::UncertainDiscreteState, t::Integer)
     sampled_initial_state = sample(state)
     return sample(predict(sys, make_uncertain(sampled_initial_state), t))
 end
 function simulate{T}(sys::NonlinearSystem{T},
-                     state::UncertainContinuousState{T}, t)
+                     state::UncertainContinuousState{T}, t::T)
     sampled_initial_state = sample(state)
     if all(sys.Q .== 0)
-        simulated_state = sampled_initial_state
+        simulated_state = predict(sys, sampled_initial_state, t)
     else
         f(t, u, du) = du .= sys.F(t, u)
         g(t, u, du) = du .= chol(Hermitian(sys.Q))*u

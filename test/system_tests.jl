@@ -96,8 +96,8 @@ continuous_nl_fcn(t, x::Vector) = [x[2], 0.0]
 continuous_nl_jac(t, x::Vector) = [0.0 1.0; 0.0 0.0]
 nonlin_sys = NonlinearSystem(continuous_nl_fcn, continuous_nl_jac, eye(2))
 @test predict(nonlin_sys, ContinuousState(1.0), 0.0) == ContinuousState(1.0)
-@test predict(nonlin_sys, UncertainContinuousState(1.0, 0.1), 0.0) ==
-    UncertainContinuousState(1.0, 0.1)
+@test predict(nonlin_sys, UncertainContinuousState(1.0, 0.0), 0.0) ==
+    UncertainContinuousState(1.0, 0.0)
 @test isapprox(predict(nonlin_sys,  ContinuousState([0.0, 1.0]), 2).x,
     ContinuousState([2.0, 1.0], 2.0).x)
 
