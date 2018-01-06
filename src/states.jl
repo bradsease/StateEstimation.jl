@@ -125,7 +125,7 @@ UncertainContinuousState{T<:AbstractFloat}(x::T, P::T) =
     UncertainContinuousState([x], reshape([P],1,1))
 UncertainContinuousState{T<:AbstractFloat}(x::T, P::T, t::T) =
     UncertainContinuousState([x], reshape([P],1,1), t)
-    
+
 """
 Union of Continuous state types (absolute and uncertain).
 """
@@ -180,7 +180,7 @@ function sample{T}(state::UncertainDiscreteState{T})
     if all(state.P .== 0)
         sampled_state = state.x
     else
-        sampled_state = state.x+chol(Hermitian(state.P))*randn(T, length(state.x))
+        sampled_state = state.x+chol(Hermitian(state.P))'*randn(T, length(state.x))
     end
     return DiscreteState(sampled_state, state.t)
 end
@@ -188,7 +188,7 @@ function sample{T}(state::UncertainContinuousState{T})
     if all(state.P .== 0)
         sampled_state = state.x
     else
-        sampled_state = state.x+chol(Hermitian(state.P))*randn(T, length(state.x))
+        sampled_state = state.x+chol(Hermitian(state.P))'*randn(T, length(state.x))
     end
     return ContinuousState(sampled_state, state.t)
 end

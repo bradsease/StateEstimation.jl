@@ -50,7 +50,7 @@ end
 
 """
     NonlinearLeastSquaresEstimator(sys::NonlinearSystem, obs::NonlinearObserver,
-                                   estimate::AbstractState)
+        estimate::AbstractState[, tolerance::AbstractFloat, max_iterations::Integer])
 """
 immutable NonlinearLeastSquaresEstimator{T,S<:AbstractUncertainState{T},
                             M<:AbstractAbsoluteState{T}} <: BatchEstimator{T,S}
@@ -58,17 +58,20 @@ immutable NonlinearLeastSquaresEstimator{T,S<:AbstractUncertainState{T},
     obs::NonlinearObserver{T}
     estimate::S
     measurements::Vector{M}
+
     tolerance::T
+    max_iterations::UInt16
 
     function NonlinearLeastSquaresEstimator(sys::NonlinearSystem{T},
-        obs::NonlinearObserver{T}, estimate::S, tol=1e-2
+        obs::NonlinearObserver{T}, estimate::S, tol=1e-2, max_iterations=15,
         ) where {T,S<:AbstractUncertainState{T}}
         M = absolute_type(estimate)
-        new{T,S,M}(sys, obs, estimate, Vector{M}([]), tol)
+        new{T,S,M}(sys, obs, estimate, Vector{M}([]), tol, max_iterations)
     end
 end
 function NonlinearLeastSquaresEstimator(sys::NonlinearSystem,
-    obs::NonlinearObserver, estimate::AbstractAbsoluteState, tol=1e-2)
+    obs::NonlinearObserver, estimate::AbstractAbsoluteState,
+    tol=1e-2, max_iterations=15)
     NonlinearLeastSquaresEstimator(sys, obs, make_uncertain(estimate), tol)
 end
 
@@ -148,8 +151,7 @@ solution data.
 """
 function solve(::BatchEstimator) end
 function solve{T}(lse::LeastSquaresEstimator{T})
-    m = size(lse.obs.H, 1)
-    n = length(lse.estimate.x)
+    m,n = size(lse.obs.H)
     A = zeros(T, n, m*length(lse.measurements))
     b = zeros(T, m*length(lse.measurements))
     C = spzeros(T, m*length(lse.measurements), m*length(lse.measurements))
@@ -172,15 +174,15 @@ function solve{T}(lse::LeastSquaresEstimator{T})
     return estimate
 end
 function solve{T}(nlse::NonlinearLeastSquaresEstimator{T})
-    m = size(nlse.measurements[1].x, 1)
-    n = length(nlse.estimate.x)
+    m,n = size(nlse.measurements[1].x, 1), length(nlse.estimate.x)
     A = zeros(T, n, m*length(nlse.measurements))
     b = zeros(T, m*length(nlse.measurements))
     C = spzeros(T, m*length(nlse.measurements), m*length(nlse.measurements))
-    estimate = deepcopy(nlse.estimate)
-    convergence = 1.0e12
-    iteration_count = 100
     temp = zeros(T, n, m)
+
+    estimate = deepcopy(nlse.estimate)
+    convergence = nlse.tolerance+1
+    iteration_count = nlse.max_iterations
 
     while convergence > nlse.tolerance && iteration_count > 0
         for idx = 1:length(nlse.measurements)
@@ -203,7 +205,6 @@ function solve{T}(nlse::NonlinearLeastSquaresEstimator{T})
         estimate.x += delta
         convergence = norm(delta ./ estimate.x)
         iteration_count -= 1
-        #println(convergence)
     end
 
     estimate.P = temp * C * temp'

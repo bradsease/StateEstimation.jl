@@ -75,12 +75,12 @@ struct NonlinearSystem{T<:AbstractFloat} <: AbstractSystem{T}
     reltol::T
 
     function NonlinearSystem(F::Function, dF_dx::Function, Q::Covariance{T},
-                             predict_tolerances=(1e-2, 1e-2)) where T
+                             predict_tolerances=(1e-3, 1e-3)) where T
         new{T}(F, dF_dx, Q, predict_tolerances[1], predict_tolerances[2])
     end
 end
 NonlinearSystem(F::Function, dF_dx::Function, Q::AbstractFloat,
-    predict_tolerances=(1e-2, 1e-2)) =
+    predict_tolerances=(1e-3, 1e-3)) =
     NonlinearSystem(F, dF_dx, reshape([Q], 1, 1), predict_tolerances)
 
 

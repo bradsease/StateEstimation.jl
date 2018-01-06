@@ -27,12 +27,12 @@ Plot the contents of an estimator history archive.
 function plot_archive(archive::EstimatorHistory)
     t = archive.states[1].t
     data = archive.states[1].x'
-    cov = diag(chol(Hermitian(archive.states[1].P)))'
+    cov = sqrt.(diag(archive.states[1].P))'
 
     for i = 1:length(archive.states)
         t = vcat(t, archive.states[i].t)
         data = vcat(data, archive.states[i].x')
-        cov = vcat(cov, diag(chol(Hermitian(archive.states[i].P)))')
+        cov = vcat(cov, sqrt.(diag(archive.states[i].P))')
     end
 
     scatter(t, data, markersize=1, markercolor="black",
