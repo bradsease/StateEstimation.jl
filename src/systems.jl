@@ -47,8 +47,8 @@ LinearSystem{T<:AbstractFloat}(A::T, Q::T) =
 
 
 """
-    NonlinearSystem(F::Function, dF_dx::Function, Q::Covariance)
-    NonlinearSystem(F::Function, dF_dx::Function, Q::AbstractFloat)
+    NonlinearSystem(F::Function, dF_dx::Function, Q::Covariance[, tolerances::Tuple])
+    NonlinearSystem(F::Function, dF_dx::Function, Q::AbstractFloat[, tolerances::Tuple])
 
 Nonlinear system of equations. Systems take a specific form depending on the
 type of state they are used in conjunction with. With a `DiscreteState`, the
@@ -63,19 +63,25 @@ With a `ContinuousState`, the system takes on a continous ODE form
 NonlinearSystem constructors require both the function,
 `F(t::Number, x::Vector)`, and its Jacobian, `dF_dx(t::Number, x::Vector)`. Both
 `F()` and `dF_dx()` must return a vector.
+
+The user may optionally specify the integrator tolerances with a tuple of
+`(abstol, reltol)`. The default tolerances are `(1e-2, 1e-2)`.
 """
 struct NonlinearSystem{T<:AbstractFloat} <: AbstractSystem{T}
     F::Function
     dF_dx::Function
     Q::Covariance{T}
+    abstol::T
+    reltol::T
 
-    function NonlinearSystem(F::Function, dF_dx::Function,
-                             Q::Covariance{T}) where T
-        new{T}(F, dF_dx, Q)
+    function NonlinearSystem(F::Function, dF_dx::Function, Q::Covariance{T},
+                             predict_tolerances=(1e-2, 1e-2)) where T
+        new{T}(F, dF_dx, Q, predict_tolerances[1], predict_tolerances[2])
     end
 end
-NonlinearSystem(F::Function, dF_dx::Function, Q::AbstractFloat) =
-    NonlinearSystem(F, dF_dx, reshape([Q], 1, 1))
+NonlinearSystem(F::Function, dF_dx::Function, Q::AbstractFloat,
+    predict_tolerances=(1e-2, 1e-2)) =
+    NonlinearSystem(F, dF_dx, reshape([Q], 1, 1), predict_tolerances)
 
 
 """
@@ -136,7 +142,8 @@ function state_transition_matrix{T,S<:UnionContinuous{T}}(
     end
     initial_state = hcat(state.x, eye(T, length(state.x)))
     problem = ODEProblem(stm_ode, initial_state, (state.t, t))
-    solution = DifferentialEquations.solve(problem, reltol=1e-6, abstol=1e-6)
+    solution = DifferentialEquations.solve(problem, abstol=sys.abstol,
+                                           reltol=sys.reltol)
     return solution.u[end][:, 2:end]
 end
 
@@ -246,7 +253,8 @@ function predict!{T}(sys::NonlinearSystem{T}, state::UncertainDiscreteState{T},
 end
 function predict!{T}(sys::NonlinearSystem{T}, state::ContinuousState{T}, t)
     solution = DifferentialEquations.solve(
-        ODEProblem(sys.F, state.x, (state.t, t)), save_everystep=false)
+        ODEProblem(sys.F, state.x, (state.t, t)),
+        save_everystep=false, abstol=sys.abstol, reltol=sys.reltol)
     state.x .= solution.u[end]
     state.t = t
     return nothing
@@ -264,9 +272,9 @@ function predict!{T}(sys::NonlinearSystem{T},
     end
 
     combined_state = [state.x; state.P[:]]
-    solution = DifferentialEquations.solve(ODEProblem(
-        combined_ode, combined_state, (state.t, t)), save_everystep=false,
-        reltol=1e-8, abstol=1e-8)
+    solution = DifferentialEquations.solve(
+        ODEProblem(combined_ode, combined_state, (state.t, t)),
+        save_everystep=false, abstol=sys.abstol, reltol=sys.reltol)
 
     state.x .= solution.u[end][1:n]
     state.P .= reshape(solution.u[end][n+1:end], n, n)

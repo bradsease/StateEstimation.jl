@@ -116,7 +116,7 @@ julia> dF_dx(k, x_k) = 1.05*x_k.^0.05
 dF_dx (generic function with 1 method)
 
 julia> system = NonlinearSystem(F, dF_dx, 0.0)
-StateEstimation.NonlinearSystem{Float64}(F, dF_dx, [0.0])
+StateEstimation.NonlinearSystem{Float64}(F, dF_dx, [0.0], 0.01, 0.01)
 
 julia> predict(system, state, 10)
 StateEstimation.DiscreteState{Float64}([42.5495], 10)
