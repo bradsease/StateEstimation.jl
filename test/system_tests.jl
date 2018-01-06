@@ -38,6 +38,9 @@ lin_sys = LinearSystem([[0.0, 1.0] [-1.0, 0.0]], 2*eye(2))
 result = predict(lin_sys, UncertainContinuousState(ones(2), eye(2)), 2.0)
 @test result.x == expm(lin_sys.A*2)*ones(2)
 @test isapprox(result.P, [[5.0, 0.0] [0.0, 5.0]], rtol=1e-6)
+@test predict(lin_sys, ContinuousState(ones(2)), 0.0) == ContinuousState(ones(2))
+@test predict(lin_sys, UncertainContinuousState(ones(2), eye(2)), 0.0) ==
+    UncertainContinuousState(ones(2), eye(2))
 
 # Test in-place discrete prediction methods
 lin_sys = LinearSystem(ones(2,2), eye(2))
@@ -92,6 +95,9 @@ nonlin_sys = NonlinearSystem(discrete_nl_fcn, discrete_nl_jac, eye(3))
 continuous_nl_fcn(t, x::Vector) = [x[2], 0.0]
 continuous_nl_jac(t, x::Vector) = [0.0 1.0; 0.0 0.0]
 nonlin_sys = NonlinearSystem(continuous_nl_fcn, continuous_nl_jac, eye(2))
+@test predict(nonlin_sys, ContinuousState(1.0), 0.0) == ContinuousState(1.0)
+@test predict(nonlin_sys, UncertainContinuousState(1.0, 0.1), 0.0) ==
+    UncertainContinuousState(1.0, 0.1)
 @test isapprox(predict(nonlin_sys,  ContinuousState([0.0, 1.0]), 2).x,
     ContinuousState([2.0, 1.0], 2.0).x)
 

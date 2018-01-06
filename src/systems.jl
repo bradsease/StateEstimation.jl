@@ -252,33 +252,37 @@ function predict!{T}(sys::NonlinearSystem{T}, state::UncertainDiscreteState{T},
     return nothing
 end
 function predict!{T}(sys::NonlinearSystem{T}, state::ContinuousState{T}, t)
-    solution = DifferentialEquations.solve(
-        ODEProblem(sys.F, state.x, (state.t, t)),
-        save_everystep=false, abstol=sys.abstol, reltol=sys.reltol)
-    state.x .= solution.u[end]
-    state.t = t
+    if t != state.t
+        solution = DifferentialEquations.solve(
+            ODEProblem(sys.F, state.x, (state.t, t)),
+            save_everystep=false, abstol=sys.abstol, reltol=sys.reltol)
+        state.x .= solution.u[end]
+        state.t = t
+    end
     return nothing
 end
 function predict!{T}(sys::NonlinearSystem{T},
                      state::UncertainContinuousState{T}, t)
-    n = length(state.x)
-    function combined_ode(t, x_in)
-        x = x_in[1:n]
-        P = reshape(x_in[n+1:end], n, n)
-        xdot = sys.F(t, x)
-        A = sys.dF_dx(t, x)
-        Pdot = A*P + P*A' + sys.Q
-        return [xdot; Pdot[:]]
+    if t != state.t
+        n = length(state.x)
+        function combined_ode(t, x_in)
+            x = x_in[1:n]
+            P = reshape(x_in[n+1:end], n, n)
+            xdot = sys.F(t, x)
+            A = sys.dF_dx(t, x)
+            Pdot = A*P + P*A' + sys.Q
+            return [xdot; Pdot[:]]
+        end
+
+        combined_state = [state.x; state.P[:]]
+        solution = DifferentialEquations.solve(
+            ODEProblem(combined_ode, combined_state, (state.t, t)),
+            save_everystep=false, abstol=sys.abstol, reltol=sys.reltol)
+
+        state.x .= solution.u[end][1:n]
+        state.P .= reshape(solution.u[end][n+1:end], n, n)
+        state.t = t
     end
-
-    combined_state = [state.x; state.P[:]]
-    solution = DifferentialEquations.solve(
-        ODEProblem(combined_ode, combined_state, (state.t, t)),
-        save_everystep=false, abstol=sys.abstol, reltol=sys.reltol)
-
-    state.x .= solution.u[end][1:n]
-    state.P .= reshape(solution.u[end][n+1:end], n, n)
-    state.t = t
     return nothing
 end
 
