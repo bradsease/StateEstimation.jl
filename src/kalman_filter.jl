@@ -77,8 +77,8 @@ const ContinuousKalmanFilter{T} =
     kalman_predict(kf::KalmanFilter, t)
 """
 function kalman_predict(kf::KalmanFilter, t)
-    xk = predict(kf.sys, kf.estimate, t)
-    yk = predict(kf.obs, xk)
+    xk = predict(kf.estimate, kf.sys, t)
+    yk = predict(xk, kf.obs)
     Pxy = xk.P*kf.obs.H'
     return xk, yk, Pxy
 end

@@ -57,16 +57,16 @@ end
 
 
 """
-    simulate(sys::AbstractSystem, obs::AbstractObserver, state::AbstractState, t::Real)
+    simulate(state::AbstractState, sys::AbstractSystem, obs::AbstractObserver, t::Real)
 
 Simulate a combined state prediction and observation with noise. Returns two
 absolute states. The first represents the "truth" state and the second is a
 simulated measurement of that state.
 """
-function simulate(sys::AbstractSystem, obs::AbstractObserver,
-                  state::AbstractState, t::Real)
-   simulated_state = simulate(sys, state, t)
-   simulated_measurement = simulate(obs, simulated_state)
+function simulate(state::AbstractState, sys::AbstractSystem,
+                  obs::AbstractObserver, t::Real)
+   simulated_state = simulate(state, sys, t)
+   simulated_measurement = simulate(simulated_state, obs)
    return simulated_state, simulated_measurement
 end
 
@@ -78,7 +78,7 @@ and truth state. Advances the simulator's internal truth state to the given
 time. Returns a tuple of (true_state, measurement).
 """
 function simulate(ssm::SingleStateSimulator, t::Real)
-    true_state, measurement = simulate(ssm.sys, ssm.obs, ssm.true_state, t)
+    true_state, measurement = simulate(ssm.true_state, ssm.sys, ssm.obs, t)
     ssm.true_state .= true_state
     return true_state, measurement
 end
@@ -90,7 +90,7 @@ Simulate a state and measurement for a given time using a bank of internal
 models and truth states. Returns a vector of (true_state, measurement) tuples.
 """
 function simulate(msm::MultiStateSimulator, t::Real)
-    sim_tuples = [simulate(ssm.sys, ssm.obs, ssm.true_state, t) for
+    sim_tuples = [simulate(ssm.true_state, ssm.sys, ssm.obs, t) for
                   ssm in msm.simulator_bank]
     return sim_tuples
 end

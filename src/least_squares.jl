@@ -108,8 +108,9 @@ function compute_residuals!{T,S}(residuals::Vector{S},
                                  estimator::BatchEstimator{T,S},
                                  initial_state::S)
     for idx = 1:length(estimator.measurements)
-        pred_measurement = predict(estimator.obs, predict(
-            estimator.sys, initial_state, estimator.measurements[idx].t))
+        pred_measurement = predict(
+            predict(initial_state, estimator.sys, estimator.measurements[idx].t),
+            estimator.obs)
         pred_measurement .-= estimator.measurements[idx].x
         push!(residuals, pred_measurement)
     end
@@ -129,7 +130,7 @@ function compute_states!{T,S}(state_history::Vector{S},
                               initial_state::S)
     for idx = 1:length(estimator.measurements)
         pred_state = predict(
-            estimator.sys, initial_state, estimator.measurements[idx].t)
+            initial_state, estimator.sys, estimator.measurements[idx].t)
         push!(state_history, pred_state)
     end
     return nothing
@@ -191,7 +192,7 @@ function solve{T}(nlse::NonlinearLeastSquaresEstimator{T})
 
             t = nlse.measurements[idx].t
             predicted_measurement =
-                predict(nlse.obs, predict(nlse.sys, estimate, t))
+                predict(predict(estimate, nlse.sys, t), nlse.obs)
 
             A[:, start_idx:end_idx] .= state_transition_matrix(nlse.sys,
                 estimate, t)' * nlse.obs.dH_dx(t, estimate.x)'

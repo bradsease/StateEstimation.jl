@@ -118,7 +118,7 @@ observable(sys::LinearSystem, obs::LinearObserver) = observable(sys.A, obs.H)
 
 
 """
-    predict(obs::AbstractObserver, state::AbstractState)
+    predict(state::AbstractState, obs::AbstractObserver)
 
 Predict a state through an arbitrary observer. The `predict` method will advance
 both the state vector and, if necessary, its covariance through the input
@@ -126,33 +126,33 @@ measurement model. For NonlinearObservers, the covariance prediction is only a
 linear approximation.
 """
 function predict(::AbstractObserver) end
-function predict{T}(obs::LinearObserver{T}, state::DiscreteState{T})
+function predict{T}(state::DiscreteState{T}, obs::LinearObserver{T})
     return DiscreteState(obs.H*state.x, state.t)
 end
-function predict{T}(obs::LinearObserver{T}, state::ContinuousState{T})
+function predict{T}(state::ContinuousState{T}, obs::LinearObserver{T})
     return ContinuousState(obs.H*state.x, state.t)
 end
-function predict{T}(obs::LinearObserver{T}, state::UncertainDiscreteState{T})
+function predict{T}(state::UncertainDiscreteState{T}, obs::LinearObserver{T})
     return UncertainDiscreteState(
         obs.H*state.x, obs.H*state.P*obs.H'+obs.R, state.t)
 end
-function predict{T}(obs::LinearObserver{T}, state::UncertainContinuousState{T})
+function predict{T}(state::UncertainContinuousState{T}, obs::LinearObserver{T})
     return UncertainContinuousState(
         obs.H*state.x, obs.H*state.P*obs.H'+obs.R, state.t)
 end
-function predict{T}(obs::NonlinearObserver{T}, state::DiscreteState{T})
+function predict{T}(state::DiscreteState{T}, obs::NonlinearObserver{T})
     return DiscreteState(obs.H(state.t, state.x), state.t)
 end
-function predict{T}(obs::NonlinearObserver{T}, state::ContinuousState{T})
+function predict{T}(state::ContinuousState{T}, obs::NonlinearObserver{T})
     return ContinuousState(obs.H(state.t, state.x), state.t)
 end
-function predict{T}(obs::NonlinearObserver{T}, state::UncertainDiscreteState{T})
+function predict{T}(state::UncertainDiscreteState{T}, obs::NonlinearObserver{T})
     jac = obs.dH_dx(state.t, state.x)
     return UncertainDiscreteState(
         obs.H(state.t, state.x), jac*state.P*jac'+obs.R, state.t)
 end
-function predict{T}(obs::NonlinearObserver{T},
-                    state::UncertainContinuousState{T})
+function predict{T}(state::UncertainContinuousState{T},
+                    obs::NonlinearObserver{T})
     jac = obs.dH_dx(state.t, state.x)
     return UncertainContinuousState(
         obs.H(state.t, state.x), jac*state.P*jac'+obs.R, state.t)
@@ -160,7 +160,7 @@ end
 
 
 """
-   simulate(obs::AbstractObserver, state::AbstractState)
+   simulate(state::AbstractState, obs::AbstractObserver)
 
 Simulate a state observation with initial state error and process noise. This
 method returns an absolute state by sampling the initial state (if uncertain),
@@ -168,12 +168,12 @@ and propagating that state through the input system in the presence of
 measurement noise.
 """
 function simulate(::AbstractObserver) end
-function simulate(obs::AbstractObserver, state::AbstractAbsoluteState)
-    return simulate(obs, make_uncertain(state))
+function simulate(state::AbstractAbsoluteState, obs::AbstractObserver)
+    return simulate(make_uncertain(state), obs)
 end
-function simulate(obs::LinearObserver, state::AbstractUncertainState)
-    return sample(predict(obs, state))
+function simulate(state::AbstractUncertainState, obs::LinearObserver)
+    return sample(predict(state, obs))
 end
-function simulate(obs::NonlinearObserver,state::AbstractUncertainState)
-    return sample(predict(obs, make_uncertain(sample(state))))
+function simulate(state::AbstractUncertainState, obs::NonlinearObserver)
+    return sample(predict(make_uncertain(sample(state)), obs))
 end

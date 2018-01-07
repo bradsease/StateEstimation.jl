@@ -188,7 +188,7 @@ end
 
 
 """
-    predict(sys::AbstractSystem, state::AbstractState, t::Number)
+    predict(state::AbstractState, sys::AbstractSystem, t::Real)
 
 Predict a state through an arbitrary system. The time step, `t`, must match the
 input state in its type, i.e. for a DiscreteState, `t` must be an integer.
@@ -200,24 +200,24 @@ covariance prediction is only a linear approximation.
 Use `predict!` to update the input state with the predicted state in-place.
 """
 function predict(::AbstractSystem) end
-function predict{T}(sys::AbstractSystem{T}, state::AbstractState{T}, t)
+function predict{T}(state::AbstractState{T}, sys::AbstractSystem{T}, t)
     out_state = deepcopy(state)
-    predict!(sys, out_state, t)
+    predict!(out_state, sys, t)
     return out_state
 end
 
 
 """
-    predict!(sys::AbstractSystem, state::AbstractState, t::Number)
+    predict!(state::AbstractState, sys::AbstractSystem, t::Real)
 
 In-place prediction of a state through an arbitrary system.
 """
-function predict!{T}(sys::LinearSystem{T}, state::AbstractAbsoluteState{T}, t)
+function predict!{T}(state::AbstractAbsoluteState{T}, sys::LinearSystem{T}, t)
     state .= state_transition_matrix(sys, state, t) * state
     state.t = t
     return nothing
 end
-function predict!{T}(sys::LinearSystem{T}, state::UncertainDiscreteState{T},
+function predict!{T}(state::UncertainDiscreteState{T}, sys::LinearSystem{T},
                      t::Integer)
     assert_compatibility(sys, state)
     for idx = state.t:t-1
@@ -227,13 +227,13 @@ function predict!{T}(sys::LinearSystem{T}, state::UncertainDiscreteState{T},
     state.t = t
     return nothing
 end
-function predict!{T}(sys::LinearSystem{T}, state::UncertainContinuousState{T},t)
+function predict!{T}(state::UncertainContinuousState{T}, sys::LinearSystem{T},t)
     state.x = state_transition_matrix(sys, state, t) * state.x
     state.P = continuous_predict_cov(sys.A, sys.Q, state.P, t-state.t)
     state.t = t
     return nothing
 end
-function predict!{T}(sys::NonlinearSystem{T}, state::DiscreteState{T},
+function predict!{T}(state::DiscreteState{T}, sys::NonlinearSystem{T},
                      t::Integer)
     for t_step = state.t:t-1
         state.x = sys.F(t_step, state.x)
@@ -241,7 +241,7 @@ function predict!{T}(sys::NonlinearSystem{T}, state::DiscreteState{T},
     state.t = t
     return nothing
 end
-function predict!{T}(sys::NonlinearSystem{T}, state::UncertainDiscreteState{T},
+function predict!{T}(state::UncertainDiscreteState{T}, sys::NonlinearSystem{T},
                      t::Integer)
     for t_step = state.t:t-1
         state.x = sys.F(t_step, state.x)
@@ -251,7 +251,7 @@ function predict!{T}(sys::NonlinearSystem{T}, state::UncertainDiscreteState{T},
     state.t = t
     return nothing
 end
-function predict!{T}(sys::NonlinearSystem{T}, state::ContinuousState{T}, t)
+function predict!{T}(state::ContinuousState{T}, sys::NonlinearSystem{T}, t)
     if t != state.t
         solution = DifferentialEquations.solve(
             ODEProblem(sys.F, state.x, (state.t, t)),
@@ -261,8 +261,7 @@ function predict!{T}(sys::NonlinearSystem{T}, state::ContinuousState{T}, t)
     end
     return nothing
 end
-function predict!{T}(sys::NonlinearSystem{T},
-                     state::UncertainContinuousState{T}, t)
+function predict!{T}(state::UncertainContinuousState{T}, sys::NonlinearSystem{T}, t)
     if t != state.t
         n = length(state.x)
         function combined_ode(t, x_in)
@@ -289,7 +288,7 @@ end
 
 
 """
-    simulate(sys::AbstractSystem, state::AbstractState, t::Real)
+    simulate(state::AbstractState, sys::AbstractSystem, t::Real)
 
 Simulate a state prediction with initial state error and process noise. This
 method returns an absolute state by sampling the initial state (if uncertain),
@@ -297,21 +296,21 @@ and propagating that state through the input system in the presence of process
 noise.
 """
 function simulate(::AbstractSystem) end
-function simulate(sys::AbstractSystem, state::AbstractAbsoluteState, t::Real)
-    return simulate(sys, make_uncertain(state), t)
+function simulate(state::AbstractAbsoluteState, sys::AbstractSystem, t::Real)
+    return simulate(make_uncertain(state), sys, t)
 end
-function simulate(sys::LinearSystem, state::AbstractUncertainState, t::Real)
-    return sample(predict(sys, state, t))
+function simulate(state::AbstractUncertainState, sys::LinearSystem, t::Real)
+    return sample(predict(state, sys, t))
 end
-function simulate(sys::NonlinearSystem, state::UncertainDiscreteState, t::Integer)
+function simulate(state::UncertainDiscreteState, sys::NonlinearSystem, t::Integer)
     sampled_initial_state = sample(state)
-    return sample(predict(sys, make_uncertain(sampled_initial_state), t))
+    return sample(predict(make_uncertain(sampled_initial_state), sys, t))
 end
-function simulate{T}(sys::NonlinearSystem{T},
-                     state::UncertainContinuousState{T}, t::T)
+function simulate{T}(state::UncertainContinuousState{T},
+                     sys::NonlinearSystem{T}, t::T)
     sampled_initial_state = sample(state)
     if all(sys.Q .== 0)
-        simulated_state = predict(sys, sampled_initial_state, t)
+        simulated_state = predict(sampled_initial_state, sys, t)
     else
         f(t, u, du) = du .= sys.F(t, u)
         g(t, u, du) = du .= chol(Hermitian(sys.Q))*u

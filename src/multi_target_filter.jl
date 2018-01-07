@@ -87,10 +87,10 @@ end
     distance(est::SequentialEstimator, z::AbstractAbsoluteState)
 """
 function distance(est::DiscreteSequentialEstimator, z::DiscreteState)
-    return distance(predict(est.obs, predict(est.sys, est.estimate, z.t)), z)
+    return distance(predict(predict(est.estimate, est.sys, z.t), est.obs), z)
 end
 function distance(est::ContinuousSequentialEstimator, z::ContinuousState)
-    return distance(predict(est.obs, predict(est.sys, est.estimate, z.t)), z)
+    return distance(predict(predict(est.estimate, est.sys, z.t), est.obs), z)
 end
 
 

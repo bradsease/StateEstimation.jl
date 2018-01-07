@@ -74,8 +74,8 @@ const ContinuousEKF{T} =
     kalman_predict(kf::KalmanFilter, t)
 """
 function kalman_predict(ekf::ExtendedKalmanFilter, t)
-    xk = predict(ekf.sys, ekf.estimate, t)
-    yk = predict(ekf.obs, xk)
+    xk = predict(ekf.estimate, ekf.sys, t)
+    yk = predict(xk, ekf.obs)
     Pxy = xk.P * ekf.obs.dH_dx(t, ekf.estimate.x)'
     return xk, yk, Pxy
 end

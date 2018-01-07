@@ -29,7 +29,7 @@ StateEstimation.ContinuousState{Float64}([2.0], 0.0)
 julia> system = LinearSystem(-1.0)
 StateEstimation.LinearSystem{Float64}([-1.0], [0.0])
 
-julia> predict(system, state, 2.0)
+julia> predict(state, system, 2.0)
 StateEstimation.ContinuousState{Float64}([0.270671], 2.0)
 
 ```
@@ -63,7 +63,7 @@ julia> Q = 0.01*eye(2)
 julia> system = LinearSystem(A, Q)
 StateEstimation.LinearSystem{Float64}([0.995004 -0.0998334; 0.0998334 0.995004], [0.01 0.0; 0.0 0.01])
 
-julia> predict(system, state, 5)
+julia> predict(state, system, 5)
 StateEstimation.UncertainDiscreteState{Float64}([0.398157, 1.35701], [1.05 0.0; 0.0 1.05], 5)
 
 ```
@@ -118,7 +118,7 @@ dF_dx (generic function with 1 method)
 julia> system = NonlinearSystem(F, dF_dx, 0.0)
 StateEstimation.NonlinearSystem{Float64}(F, dF_dx, [0.0], 0.001, 0.001)
 
-julia> predict(system, state, 10)
+julia> predict(state, system, 10)
 StateEstimation.DiscreteState{Float64}([42.5495], 10)
 
 ```
@@ -141,7 +141,7 @@ StateEstimation.DiscreteState{Float64}([2.0], 0)
 julia> observer = LinearObserver(0.25, 0.01)
 StateEstimation.LinearObserver{Float64}([0.25], [0.01])
 
-julia> predict(observer, state)
+julia> predict(state, observer)
 StateEstimation.DiscreteState{Float64}([0.5], 0)
 
 ```
@@ -177,7 +177,7 @@ julia> R = 0.1
 julia> observer = LinearObserver(H, R)
 StateEstimation.LinearObserver{Float64}([1.0 0.0], [0.1])
 
-julia> predict(observer, state)
+julia> predict(state, observer)
 StateEstimation.UncertainContinuousState{Float64}([1.0], [0.2], 0.0)
 
 ```
