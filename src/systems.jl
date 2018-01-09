@@ -200,7 +200,7 @@ covariance prediction is only a linear approximation.
 Use `predict!` to update the input state with the predicted state in-place.
 """
 function predict(::AbstractSystem) end
-function predict{T}(state::AbstractState{T}, sys::AbstractSystem{T}, t)
+function predict{T}(state::AbstractState{T}, sys::AbstractSystem{T}, t::Real)
     out_state = deepcopy(state)
     predict!(out_state, sys, t)
     return out_state
@@ -212,7 +212,7 @@ end
 
 In-place prediction of a state through an arbitrary system.
 """
-function predict!{T}(state::AbstractAbsoluteState{T}, sys::LinearSystem{T}, t)
+function predict!{T}(state::AbstractAbsoluteState{T}, sys::LinearSystem{T}, t::Real)
     state .= state_transition_matrix(sys, state, t) * state
     state.t = t
     return nothing
@@ -227,7 +227,7 @@ function predict!{T}(state::UncertainDiscreteState{T}, sys::LinearSystem{T},
     state.t = t
     return nothing
 end
-function predict!{T}(state::UncertainContinuousState{T}, sys::LinearSystem{T},t)
+function predict!{T}(state::UncertainContinuousState{T}, sys::LinearSystem{T}, t::Real)
     state.x = state_transition_matrix(sys, state, t) * state.x
     state.P = continuous_predict_cov(sys.A, sys.Q, state.P, t-state.t)
     state.t = t
@@ -251,7 +251,7 @@ function predict!{T}(state::UncertainDiscreteState{T}, sys::NonlinearSystem{T},
     state.t = t
     return nothing
 end
-function predict!{T}(state::ContinuousState{T}, sys::NonlinearSystem{T}, t)
+function predict!{T}(state::ContinuousState{T}, sys::NonlinearSystem{T}, t::Real)
     if t != state.t
         solution = DifferentialEquations.solve(
             ODEProblem(sys.F, state.x, (state.t, t)),
@@ -261,7 +261,7 @@ function predict!{T}(state::ContinuousState{T}, sys::NonlinearSystem{T}, t)
     end
     return nothing
 end
-function predict!{T}(state::UncertainContinuousState{T}, sys::NonlinearSystem{T}, t)
+function predict!{T}(state::UncertainContinuousState{T}, sys::NonlinearSystem{T}, t::Real)
     if t != state.t
         n = length(state.x)
         function combined_ode(t, x_in)
