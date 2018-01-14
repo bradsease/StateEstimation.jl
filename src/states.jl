@@ -20,8 +20,8 @@ mutable struct DiscreteState{T<:AbstractFloat} <: AbstractAbsoluteState{T}
     x::Vector{T}
     t::Int64
 
-    DiscreteState(x::Vector{T}, t::Int64) where {T} = new{T}(x, t)
-    DiscreteState(x::Vector{T}) where {T} = new{T}(x, 0)
+    DiscreteState(x::Vector{T}, t::Int64) where {T} = new{T}(deepcopy(x), t)
+    DiscreteState(x::Vector{T}) where {T} = new{T}(deepcopy(x), 0)
 end
 DiscreteState(x::AbstractFloat) = DiscreteState([x])
 DiscreteState(x::AbstractFloat, t::Int64) = DiscreteState([x], t)
@@ -49,14 +49,14 @@ mutable struct UncertainDiscreteState{T<:AbstractFloat} <:
                 throw(DimensionMismatch(
                     "Dimensions of covariance and state do not match."))
             end
-            new{T}(x, P, t)
+            new{T}(deepcopy(x), deepcopy(P), t)
     end
     function UncertainDiscreteState(x::Vector{T}, P::Covariance{T}) where T
             if length(x) != size(P)[1] || length(x) != size(P)[2]
                 throw(DimensionMismatch(
                     "Dimensions of covariance and state do not match."))
             end
-            new{T}(x, P, 0)
+            new{T}(deepcopy(x), deepcopy(P), 0)
     end
 end
 UncertainDiscreteState{T<:AbstractFloat}(x::T, P::T) =
@@ -81,8 +81,8 @@ mutable struct ContinuousState{T<:AbstractFloat} <: AbstractAbsoluteState{T}
     x::Vector{T}
     t::T
 
-    ContinuousState(x::Vector{T}, t::T) where {T} = new{T}(x, t)
-    ContinuousState(x::Vector{T}) where {T} = new{T}(x, 0.0)
+    ContinuousState(x::Vector{T}, t::T) where {T} = new{T}(deepcopy(x), t)
+    ContinuousState(x::Vector{T}) where {T} = new{T}(deepcopy(x), 0.0)
 end
 ContinuousState(x::AbstractFloat) = ContinuousState([x])
 ContinuousState{T<:AbstractFloat}(x::T, t::T) = ContinuousState([x], t)
@@ -111,14 +111,14 @@ mutable struct UncertainContinuousState{T<:AbstractFloat} <:
                 throw(DimensionMismatch(
                     "Dimensions of covariance and state do not match."))
             end
-            new{T}(x, P, t)
+            new{T}(deepcopy(x), deepcopy(P), t)
     end
     function UncertainContinuousState(x::Vector{T}, P::Covariance{T}) where T
             if length(x) != size(P)[1] || length(x) != size(P)[2]
                 throw(DimensionMismatch(
                     "Dimensions of covariance and state do not match."))
             end
-            new{T}(x, P, 0.0)
+            new{T}(deepcopy(x), deepcopy(P), 0.0)
     end
 end
 UncertainContinuousState{T<:AbstractFloat}(x::T, P::T) =

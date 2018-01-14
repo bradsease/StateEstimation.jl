@@ -26,11 +26,11 @@ UnscentedTransform() = UnscentedTransform(1e-3, 2.0, 0.0)
 """
 function compute_weights(transform::UnscentedTransform, state_length::Integer)
     lambda = transform.alpha^2*(state_length + transform.kappa) - state_length
-    temp = 1 / (2*state_length + lambda)
+    temp = 1 / (2*(state_length + lambda))
     Wc = fill(temp, 2*state_length+1)
     Wm = fill(temp, 2*state_length+1)
     Wm[1] = lambda / (state_length + lambda)
-    Wc[1] = Wm[1] + 1 - transform.alpha^2 - transform.beta
+    Wc[1] = Wm[1] + 1 - transform.alpha^2 + transform.beta
     return Wm, Wc
 end
 
@@ -54,10 +54,22 @@ function compute_sigma_points(transform::UnscentedTransform,
 end
 
 
+# """
+# x1 = fcn(x0)
+# """
+# function transform!(state::AbstractUncertainState, fcn::Function)
+#     Wm, Wc = compute_weights(transform, length(state.x))
+#     sigma_points = compute_sigma_points(transform, state)
+#     for idx = 1:length(sigma_points)
+#         sigma_points[idx].x .= fcn(sigma_points[idx])
+#     end
+# end
+
+
 function predict(state::AbstractUncertainState, sys::AbstractSystem,
                  transform::UnscentedTransform, t::Real)
     predicted_state = deepcopy(state)
-    predict!(state, sys, transform, t)
+    predict!(predicted_state, sys, transform, t)
     return predicted_state
 end
 function predict!(state::AbstractUncertainState, sys::AbstractSystem,
@@ -68,18 +80,17 @@ function predict!(state::AbstractUncertainState, sys::AbstractSystem,
         predict!(sigma_points[idx], sys, t)
     end
 
-    predicted_state = deepcopy(state)
-    predicted_state.x .= 0
+    state.x .= 0
     for idx = 1:length(sigma_points)
-        predicted_state.x .+= Wm[idx] * sigma_points[idx].x
+        state.x .+= Wm[idx] * sigma_points[idx].x
     end
 
-    predicted_state.P .= 0
+    state.P .= 0
     for idx = 1:length(sigma_points)
-        sigma_diff = sigma_points[idx].x - predicted_state.x
-        predicted_state.P .+= Wc[idx] * sigma_diff * sigma_diff'
+        sigma_diff = sigma_points[idx].x - state.x
+        state.P .+= Wc[idx] * sigma_diff * sigma_diff'
     end
 
-    predicted_state.t = t
-    return predicted_state
+    state.t = t
+    return nothing
 end
