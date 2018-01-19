@@ -62,3 +62,4 @@ astate, aobs = augment(dstate, nobs)
 
 # TODO: Test combined augment methods
 augment(cstate, sys, obs)
+augment(dstate, sys, obs)
