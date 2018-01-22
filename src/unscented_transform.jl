@@ -267,6 +267,62 @@ function augment(state::UncertainDiscreteState, sys::LinearSystem, obs::Nonlinea
 
     return augmented_state, augmented_system, augmented_observer
 end
+function augment(state::UncertainContinuousState, sys::NonlinearSystem, obs::LinearObserver)
+    n,m = length(state.x), size(obs.R,1)
+    augmented_state = grow_state(state, zeros(n+m), block_diagonal(sys.Q, obs.R))
+
+    augmented_F(t, x) = vcat(sys.F(t, x[1:n]) + x[n+1:2*n], zeros(n+m))
+    augmented_dF(t, x) = hvcat((3,1), sys.dF_dx(t,x[1:n]), eye(n,n), zeros(n,m), zeros(n+m,2*n+m))
+    augmented_system = NonlinearSystem(augmented_F, augmented_dF, zeros(2*n+m,2*n+m))
+
+    augmented_H = hcat(obs.H, zeros(m,n), eye(m,m))
+    augmented_observer = LinearObserver(augmented_H, zeros(m,m))
+
+    return augmented_state, augmented_system, augmented_observer
+end
+function augment(state::UncertainDiscreteState, sys::NonlinearSystem, obs::LinearObserver)
+    n,m = length(state.x), size(obs.R,1)
+    augmented_state = grow_state(state, zeros(n+m), block_diagonal(sys.Q, obs.R))
+
+    augmented_F(t, x) = vcat(sys.F(t, x[1:n]) + x[n+1:2*n], x[n+1:2*n], zeros(m))
+    augmented_dF(t, x) = hvcat((3,3), sys.dF_dx(t,x[1:n]), eye(n,n), zeros(n,m),
+                                      zeros(n+m,n), eye(n+m,n), zeros(n+m,m))
+    augmented_system = NonlinearSystem(augmented_F, augmented_dF, zeros(2*n+m,2*n+m))
+
+    augmented_H = hcat(obs.H, zeros(m,n), eye(m,m))
+    augmented_observer = LinearObserver(augmented_H, zeros(m,m))
+
+    return augmented_state, augmented_system, augmented_observer
+end
+function augment(state::UncertainContinuousState, sys::NonlinearSystem, obs::NonlinearObserver)
+    n,m = length(state.x), size(obs.R,1)
+    augmented_state = grow_state(state, zeros(n+m), block_diagonal(sys.Q, obs.R))
+
+    augmented_F(t, x) = vcat(sys.F(t, x[1:n]) + x[n+1:2*n], zeros(n+m))
+    augmented_dF(t, x) = hvcat((3,1), sys.dF_dx(t,x[1:n]), eye(n,n), zeros(n,m), zeros(n+m,2*n+m))
+    augmented_system = NonlinearSystem(augmented_F, augmented_dF, zeros(2*n+m,2*n+m))
+
+    augmented_H(t, x) = obs.H(t, x[1:n]) + x[2*n+1:end]
+    augmented_dH(t, x) = hcat(obs.dH_dx(t,x[1:n]), zeros(m,n), eye(m,m))
+    augmented_observer = NonlinearObserver(augmented_H, augmented_dH, zeros(m,m))
+
+    return augmented_state, augmented_system, augmented_observer
+end
+function augment(state::UncertainDiscreteState, sys::NonlinearSystem, obs::NonlinearObserver)
+    n,m = length(state.x), size(obs.R,1)
+    augmented_state = grow_state(state, zeros(n+m), block_diagonal(sys.Q, obs.R))
+
+    augmented_F(t, x) = vcat(sys.F(t, x[1:n]) + x[n+1:2*n], x[n+1:2*n], zeros(m))
+    augmented_dF(t, x) = hvcat((3,3), sys.dF_dx(t,x[1:n]), eye(n,n), zeros(n,m),
+                                      zeros(n+m,n), eye(n+m,n), zeros(n+m,m))
+    augmented_system = NonlinearSystem(augmented_F, augmented_dF, zeros(2*n+m,2*n+m))
+
+    augmented_H(t, x) = obs.H(t, x[1:n]) + x[2*n+1:end]
+    augmented_dH(t, x) = hcat(obs.dH_dx(t,x[1:n]), zeros(m,n), eye(m,m))
+    augmented_observer = NonlinearObserver(augmented_H, augmented_dH, zeros(m,m))
+
+    return augmented_state, augmented_system, augmented_observer
+end
 
 
 
