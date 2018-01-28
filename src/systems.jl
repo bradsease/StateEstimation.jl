@@ -136,7 +136,7 @@ function state_transition_matrix{T,S<:UnionDiscrete{T}}(sys::NonlinearSystem{T},
 end
 function state_transition_matrix{T,S<:UnionContinuous{T}}(
     sys::NonlinearSystem{T}, state::S, t::T)
-    function stm_ode(t, u, du)
+    function stm_ode(du, u, p, t)
         du[:,1] .= sys.F(t, u[:,1])
         du[:,2:end] .= sys.dF_dx(t, u[:,1])*u[:,2:end]
     end
@@ -253,8 +253,9 @@ function predict!{T}(state::UncertainDiscreteState{T}, sys::NonlinearSystem{T},
 end
 function predict!{T}(state::ContinuousState{T}, sys::NonlinearSystem{T}, t::Real)
     if t != state.t
+        fcn(u, p, t) = sys.F(t, u)
         solution = DifferentialEquations.solve(
-            ODEProblem(sys.F, state.x, (state.t, t)),
+            ODEProblem(fcn, state.x, (state.t, t)),
             save_everystep=false, abstol=sys.abstol, reltol=sys.reltol)
         state.x .= solution.u[end]
         state.t = t
@@ -264,7 +265,7 @@ end
 function predict!{T}(state::UncertainContinuousState{T}, sys::NonlinearSystem{T}, t::Real)
     if t != state.t
         n = length(state.x)
-        function combined_ode(t, x_in)
+        function combined_ode(x_in, p, t)
             x = x_in[1:n]
             P = reshape(x_in[n+1:end], n, n)
             xdot = sys.F(t, x)
@@ -312,8 +313,8 @@ function simulate{T}(state::UncertainContinuousState{T},
     if all(sys.Q .== 0)
         simulated_state = predict(sampled_initial_state, sys, t)
     else
-        f(t, u, du) = du .= sys.F(t, u)
-        g(t, u, du) = du .= chol(Hermitian(sys.Q))*u
+        f(du, u, p, t) = du .= sys.F(t, u)
+        g(du, u, p, t) = du .= chol(Hermitian(sys.Q))*u
         prob = SDEProblem(f, g, sampled_initial_state.x, (state.t, t))
         soln = DifferentialEquations.solve(prob)
         simulated_state = ContinuousState(soln.u[end], t)
