@@ -6,15 +6,15 @@
 
 # Test methods
 state = UncertainContinuousState(ones(3), diagm([1.0, 2.0, 3.0]))
-transform = UnscentedTransform()
-compute_weights(transform, 3)
-compute_sigma_points(state, transform)
+ut = UnscentedTransform()
+compute_weights(ut, 3)
+compute_sigma_points(state, ut)
 
 
 #
 state = UncertainContinuousState(1.0, 0.1)
 sys = LinearSystem(2.0)
-predict(state, sys, transform, 1.0)
+predict(state, sys, ut, 1.0)
 
 
 # Test linear system augment methods
@@ -22,6 +22,16 @@ sys = LinearSystem(eye(2), 2.25*eye(2))
 dstate = UncertainDiscreteState(1.5*ones(2), 3.0*eye(2))
 astate, asys = augment(dstate, sys)
 @test (length(astate.x) == 4) & (size(astate.P) == (4,4)) & (size(asys.A) == (4,4))
+
+
+# Test consistency between linear prediction and UnscentedTransform
+nominal_prediction = predict(dstate, sys, 1)
+astate, asys = augment(dstate, sys)
+disc_fcn!(x) = predict!(x, asys, 1)
+unscented_prediction = transform(astate, disc_fcn!, ut)
+@test isapprox(nominal_prediction.x, unscented_prediction.x[1:2])
+@test isapprox(nominal_prediction.P, unscented_prediction.P[1:2,1:2])
+
 
 # Test nonlinear system augment methods
 F(t,x) = x.^2

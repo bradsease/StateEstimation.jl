@@ -19,8 +19,8 @@ export
     # Data archiving
     EstimatorHistory, plot_archive,
     # Unscented Transform
-    UnscentedTransform, compute_weights, compute_sigma_points, transform!,
-    augment,
+    UnscentedTransform, compute_weights, compute_sigma_points, transform,
+    trasnform!, augment,
     # Kalman filters
     AbstractKalmanFilter, KalmanFilter, ExtendedKalmanFilter, simulate,
     process!, inaccurate_simulate,
