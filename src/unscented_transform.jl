@@ -132,33 +132,6 @@ end
 
 
 """
-"""
-function grow_state(state::AbstractUncertainState, x::Vector, P::Matrix)
-    n = length(x)
-    if size(P) != (n,n)
-        throw(DimensionMismatch("Dimensions of x and P are inconsistent."))
-    end
-    augmented_state = deepcopy(state)
-    augmented_state.x = vcat(state.x, x)
-    augmented_state.P = block_diagonal(state.P, P)
-    return augmented_state
-end
-
-
-"""
-Simple blkdiag alternative for two non-sparse matrices.
-"""
-function block_diagonal(A1, A2)
-    m1, n1 = size(A1)
-    m2, n2 = size(A2)
-    A_out = zeros(m1+m2, n1+n2)
-    A_out[1:m1, 1:n1] .= A1
-    A_out[m1+1:end, n1+1:end] .= A2
-    return A_out
-end
-
-
-"""
     augment(state::UncertainDiscreteState, sys::AbstractSystem)
     augment(state::AbstractUncertainState, obs::AbstractObserver)
     augment(state::UncertainDiscreteState, sys::AbstractSystem, obs:AbstractObserver)
@@ -169,14 +142,14 @@ transform.
 # TODO: Find a way to reduce duplicated code here
 function augment(state::UncertainDiscreteState, sys::LinearSystem)
     n = length(state.x)
-    augmented_state = grow_state(state, zeros(n), sys.Q)
+    augmented_state = expand_state(state, zeros(n), sys.Q)
     augmented_A = hvcat((2,2), sys.A, eye(n,n), zeros(n,n), eye(n,n))
     augmented_system = LinearSystem(augmented_A, zeros(size(augmented_A)))
     return augmented_state, augmented_system
 end
 function augment(state::UncertainDiscreteState, sys::NonlinearSystem)
     n = length(state.x)
-    augmented_state = grow_state(state, zeros(n), sys.Q)
+    augmented_state = expand_state(state, zeros(n), sys.Q)
     augmented_F(t, x) = vcat(sys.F(t, x[1:n]) + x[n+1:end], x[n+1:end])
     augmented_dF(t, x) = hvcat((2,2), sys.dF_dx(t,x[1:n]), eye(n,n), zeros(n,n), eye(n,n))
     augmented_system = NonlinearSystem(augmented_F, augmented_dF, zeros(2*n,2*n))
@@ -184,14 +157,14 @@ function augment(state::UncertainDiscreteState, sys::NonlinearSystem)
 end
 function augment(state::AbstractUncertainState, obs::LinearObserver)
     n,m = length(state.x), size(obs.R,1)
-    augmented_state = grow_state(state, zeros(m), obs.R)
+    augmented_state = expand_state(state, zeros(m), obs.R)
     augmented_H = hcat(obs.H, eye(m,m))
     augmented_observer = LinearObserver(augmented_H, zeros(m,m))
     return augmented_state, augmented_observer
 end
 function augment(state::AbstractUncertainState, obs::NonlinearObserver)
     n,m = length(state.x), size(obs.R,1)
-    augmented_state = grow_state(state, zeros(m), obs.R)
+    augmented_state = expand_state(state, zeros(m), obs.R)
     augmented_H(t, x) = obs.H(t, x[1:n]) + x[n+1:end]
     augmented_dH(t, x) = hcat(obs.dH_dx(t,x[1:n]), eye(m,m))
     augmented_observer = NonlinearObserver(augmented_H, augmented_dH, zeros(m,m))
@@ -199,7 +172,7 @@ function augment(state::AbstractUncertainState, obs::NonlinearObserver)
 end
 function augment(state::UncertainDiscreteState, sys::LinearSystem, obs::LinearObserver)
     n,m = length(state.x), size(obs.R,1)
-    augmented_state = grow_state(state, zeros(n+m), block_diagonal(sys.Q, obs.R))
+    augmented_state = expand_state(state, zeros(n+m), block_diagonal(sys.Q, obs.R))
 
     augmented_A = hvcat((3,3), sys.A, eye(n,n), zeros(n,m),
                                zeros(n+m,n), eye(n+m,n), zeros(n+m,m))
@@ -212,7 +185,7 @@ function augment(state::UncertainDiscreteState, sys::LinearSystem, obs::LinearOb
 end
 function augment(state::UncertainDiscreteState, sys::LinearSystem, obs::NonlinearObserver)
     n,m = length(state.x), size(obs.R,1)
-    augmented_state = grow_state(state, zeros(n+m), block_diagonal(sys.Q, obs.R))
+    augmented_state = expand_state(state, zeros(n+m), block_diagonal(sys.Q, obs.R))
 
     augmented_A = hvcat((3,3), sys.A, eye(n,n), zeros(n,m),
                                zeros(n+m,n), eye(n+m,n), zeros(n+m,m))
@@ -226,7 +199,7 @@ function augment(state::UncertainDiscreteState, sys::LinearSystem, obs::Nonlinea
 end
 function augment(state::UncertainDiscreteState, sys::NonlinearSystem, obs::LinearObserver)
     n,m = length(state.x), size(obs.R,1)
-    augmented_state = grow_state(state, zeros(n+m), block_diagonal(sys.Q, obs.R))
+    augmented_state = expand_state(state, zeros(n+m), block_diagonal(sys.Q, obs.R))
 
     augmented_F(t, x) = vcat(sys.F(t, x[1:n]) + x[n+1:2*n], x[n+1:2*n], zeros(m))
     augmented_dF(t, x) = hvcat((3,3), sys.dF_dx(t,x[1:n]), eye(n,n), zeros(n,m),
@@ -240,7 +213,7 @@ function augment(state::UncertainDiscreteState, sys::NonlinearSystem, obs::Linea
 end
 function augment(state::UncertainDiscreteState, sys::NonlinearSystem, obs::NonlinearObserver)
     n,m = length(state.x), size(obs.R,1)
-    augmented_state = grow_state(state, zeros(n+m), block_diagonal(sys.Q, obs.R))
+    augmented_state = expand_state(state, zeros(n+m), block_diagonal(sys.Q, obs.R))
 
     augmented_F(t, x) = vcat(sys.F(t, x[1:n]) + x[n+1:2*n], x[n+1:2*n], zeros(m))
     augmented_dF(t, x) = hvcat((3,3), sys.dF_dx(t,x[1:n]), eye(n,n), zeros(n,m),
@@ -256,14 +229,14 @@ end
 
 
 
-function predict(state::AbstractUncertainState, sys::AbstractSystem,
-                 ut::UnscentedTransform, t::Real)
-    predicted_state = deepcopy(state)
-    predict!(predicted_state, sys, ut, t)
-    return predicted_state
-end
-function predict!(state::AbstractUncertainState, sys::AbstractSystem,
-                  ut::UnscentedTransform, t::Real)
-    fcn!(x) = predict!(x, sys, t)
-    transform!(state, fcn!, ut)
-end
+# function predict(state::AbstractUncertainState, sys::AbstractSystem,
+#                  ut::UnscentedTransform, t::Real)
+#     predicted_state = deepcopy(state)
+#     predict!(predicted_state, sys, ut, t)
+#     return predicted_state
+# end
+# function predict!(state::AbstractUncertainState, sys::AbstractSystem,
+#                   ut::UnscentedTransform, t::Real)
+#     fcn!(x) = predict!(x, sys, t)
+#     transform!(state, fcn!, ut)
+# end

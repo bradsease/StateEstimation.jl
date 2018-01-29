@@ -14,7 +14,7 @@ compute_sigma_points(state, ut)
 #
 state = UncertainContinuousState(1.0, 0.1)
 sys = LinearSystem(2.0)
-predict(state, sys, ut, 1.0)
+# predict(state, sys, ut, 1.0)
 
 
 # Test linear system augment methods

@@ -228,6 +228,68 @@ function mahalanobis{T}(x::AbstractAbsoluteState{T},
 end
 
 
+"""
+    block_diagonal(A1::Matrix, A2::Matrix)
+
+Simple blkdiag alternative for two non-sparse matrices.
+"""
+function block_diagonal(A1, A2)
+    m1, n1 = size(A1)
+    m2, n2 = size(A2)
+    A_out = zeros(m1+m2, n1+n2)
+    A_out[1:m1, 1:n1] .= A1
+    A_out[m1+1:end, n1+1:end] .= A2
+    return A_out
+end
+
+
+"""
+    expand_state(state::AbstractState, x[, P])
+
+Increase the dimension of an AbstractState type by concatenating a new states.
+For uncertain state types, a covariance is required. The covariances of the
+existing and new states are joined in a block diagonal form. Works for both
+scalar and array input.
+"""
+function expand_state(state::AbstractAbsoluteState, x)
+    augmented_state = deepcopy(state)
+    augmented_state.x = vcat(state.x, x)
+    return augmented_state
+end
+function expand_state(state::AbstractUncertainState, x::Real, P::Real)
+    return expand_state(state, [x], fill(P, (1,1)))
+end
+function expand_state(state::AbstractUncertainState, x::Vector, P::Matrix)
+    n = length(x)
+    if size(P) != (n,n)
+        throw(DimensionMismatch("Dimensions of x and P are inconsistent."))
+    end
+    augmented_state = deepcopy(state)
+    augmented_state.x = vcat(state.x, x)
+    augmented_state.P = block_diagonal(state.P, P)
+    return augmented_state
+end
+
+
+"""
+    reduce_state(state::AbstractState, ndim::Integer)
+
+Reduce the dimension of an AbstractState to a specified number of dimensions.
+This method discards state data beyond the desired number of dimensions and,
+for uncertain state types, discards the corresponding covariance data.
+"""
+function reduce_state(state::AbstractAbsoluteState, ndim::Integer)
+    reduced_state = deepcopy(state)
+    reduced_state.x = state.x[1:ndim]
+    return reduced_state
+end
+function reduce_state(state::AbstractUncertainState, ndim::Integer)
+    reduced_state = deepcopy(state)
+    reduced_state.x = state.x[1:ndim]
+    reduced_state.P = state.P[1:ndim, 1:ndim]
+    return reduced_state
+end
+
 
 """
 State addition.

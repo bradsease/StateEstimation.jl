@@ -10,7 +10,7 @@ export
     AbstractState, AbstractAbsoluteState, AbstractUncertainState,
     DiscreteState, UncertainDiscreteState, ContinuousState,
     UncertainContinuousState, make_uncertain, make_absolute,
-    sample, distance, mahalanobis,
+    sample, distance, mahalanobis, expand_state, reduce_state,
     # Systems
     AbstractSystem, LinearSystem, NonlinearSystem, predict, predict!,
     state_transition_matrix,

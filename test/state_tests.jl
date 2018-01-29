@@ -50,6 +50,24 @@ unc_continuous_state = UncertainContinuousState(ones(2), eye(2), 0.0)
 @test mahalanobis(discrete_state, unc_discrete_state) ==
     mahalanobis(discrete_state, discrete_state, unc_discrete_state.P)
 
+# Test absolute state expansion/reduction
+test_state = ContinuousState(1.0)
+new_state = expand_state(test_state, [2.0])
+@test length(new_state.x) == 2
+new_state = reduce_state(new_state, 1)
+@test length(new_state.x) == 1
+
+# Test uncertain state expansion/reduction
+test_state = UncertainDiscreteState(ones(3), eye(3))
+@test_throws DimensionMismatch expand_state(test_state, ones(2), eye(3))
+new_state = expand_state(test_state, 2, 2)
+@test length(new_state.x) == 4
+@test size(new_state.P) == (4,4)
+new_state = reduce_state(new_state, 3)
+@test test_state.x == new_state.x
+@test test_state.P == new_state.P
+
+
 function test_state_addition_subtraction(state::AbstractState)
     for a = -1:0.5:1
         @test (state + a).x == (state.x+a)
