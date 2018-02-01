@@ -27,8 +27,8 @@ astate, asys = augment(dstate, sys)
 # Test consistency between linear prediction and UnscentedTransform
 nominal_prediction = predict(dstate, sys, 1)
 astate, asys = augment(dstate, sys)
-disc_fcn!(x) = predict!(x, asys, 1)
-unscented_prediction = transform(astate, disc_fcn!, ut)
+disc_fcn(x) = predict(x, asys, 1)
+unscented_prediction = transform(astate, disc_fcn, ut)
 @test isapprox(nominal_prediction.x, unscented_prediction.x[1:2])
 @test isapprox(nominal_prediction.P, unscented_prediction.P[1:2,1:2])
 
@@ -58,9 +58,23 @@ astate, aobs = augment(dstate, nobs)
 
 # TODO: Test combined augment methods
 augment(dstate, sys, obs)
-
 augment(dstate, nsys, obs)
-
 augment(dstate, sys, nobs)
-
 augment(dstate, nsys, nobs)
+
+
+
+
+# Test linear observer prediction
+obs = LinearObserver(eye(2), 2*eye(2))
+ut_state = predict(dstate, obs, ut)
+expected_state = predict(dstate, obs)
+@test isapprox(ut_state.x, expected_state.x)
+@test isapprox(ut_state.P, expected_state.P)
+
+# Test linear system prediction
+sys = LinearSystem(eye(2), 2*eye(2))
+ut_state = predict(dstate, sys, ut, 2)
+expected_state = predict(dstate, sys, 2)
+@test isapprox(ut_state.x, expected_state.x)
+@test isapprox(ut_state.P, expected_state.P)

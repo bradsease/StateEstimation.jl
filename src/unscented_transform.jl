@@ -36,7 +36,6 @@ end
 
 
 """
-    compute_sigma_points(x::Vector, P::Matrix, ut::UnscentedTransform)
     compute_sigma_points(x::AbstractUncertainState, ut::UnscentedTransform)
 """
 function compute_sigma_points(x::AbstractUncertainState,
@@ -53,40 +52,36 @@ function compute_sigma_points(x::AbstractUncertainState,
     end
     return sigma_points
 end
-function compute_sigma_points(x::Vector, P::Matrix, ut::UnscentedTransform)
-    sigma_points = fill(deepcopy(x), 1)
-    state_length = length(x)
-    lambda = ut.alpha^2*(state_length + ut.kappa) - state_length
-    perturbation = chol((state_length + lambda)*P)
-    for idx = 1:state_length
-        @inbounds push!(sigma_points, sigma_points[1] + perturbation[:,idx])
-    end
-    for idx = 1:state_length
-        @inbounds push!(sigma_points, sigma_points[1] - perturbation[:,idx])
-    end
-    return sigma_points
-end
 
 
 """
-    transform!(x::Vector, P::Matrix, fcn!::Function, ut::UnscentedTransform)
-    transform!(state::AbstractUncertainState, fcn!::Function, ut::UnscentedTransform)
+    transform(state::AbstractUncertainState, fcn::Function, ut::UnscentedTransform)
 """
-function transform(state::AbstractUncertainState, fcn!::Function, ut::UnscentedTransform)
-    transformed_state = deepcopy(state)
-    transform!(transformed_state, fcn!, ut)
+function transform(state::AbstractUncertainState, fcn::Function, ut::UnscentedTransform)
+    Wm, Wc = compute_weights(ut, length(state.x))
+    sigma_points = compute_sigma_points(state, ut)
+    for idx = 1:length(sigma_points)
+        sigma_points[idx] = fcn(sigma_points[idx])
+    end
+
+    transformed_state = make_uncertain(sigma_points[1])
+    transformed_state.x .= 0
+    for idx = 1:length(sigma_points)
+        transformed_state.x .+= Wm[idx] * sigma_points[idx].x
+    end
+
+    transformed_state.P .= 0
+    for idx = 1:length(sigma_points)
+        sigma_diff = sigma_points[idx].x - transformed_state.x
+        transformed_state.P .+= Wc[idx] * sigma_diff * sigma_diff'
+    end
+
+    transformed_state.t = sigma_points[1].t
     return transformed_state
 end
-function transform(x::Vector, P::Matrix, fcn!::Function, ut::UnscentedTransform)
-    transformed_x = deepcopy(x)
-    transformed_P = deepcopy(P)
-    transform!(transformed_x, transformed_P, fcn!, ut)
-    return transformed_x, transformed_P
-end
 
 
 """
-    transform!(x::Vector, P::Matrix, fcn!::Function, ut::UnscentedTransform)
     transform!(state::AbstractUncertainState, fcn!::Function, ut::UnscentedTransform)
 """
 function transform!(state::AbstractUncertainState, fcn!::Function, ut::UnscentedTransform)
@@ -108,25 +103,6 @@ function transform!(state::AbstractUncertainState, fcn!::Function, ut::Unscented
     end
 
     state.t = sigma_points[1].t
-    return nothing
-end
-function transform!(x::Vector, P::Matrix, fcn!::Function, ut::UnscentedTransform)
-    Wm, Wc = compute_weights(ut, length(x))
-    sigma_points = compute_sigma_points(x, P, ut)
-    for idx = 1:length(sigma_points)
-        fcn!(sigma_points[idx])
-    end
-
-    x .= 0
-    for idx = 1:length(sigma_points)
-        x .+= Wm[idx] * sigma_points[idx]
-    end
-
-    P .= 0
-    for idx = 1:length(sigma_points)
-        sigma_diff = sigma_points[idx] - x
-        P .+= Wc[idx] * sigma_diff * sigma_diff'
-    end
     return nothing
 end
 
@@ -229,14 +205,30 @@ end
 
 
 
-# function predict(state::AbstractUncertainState, sys::AbstractSystem,
-#                  ut::UnscentedTransform, t::Real)
-#     predicted_state = deepcopy(state)
-#     predict!(predicted_state, sys, ut, t)
-#     return predicted_state
+# Unscented prediction methods
+
+# function predict!(state::UncertainDiscreteState, sys::AbstractSystem,
+#                   ut::UnscentedTransform, t::Integer)
+#     # fcn!(x) = predict!(x, sys, t)
+#     # transform!(state, fcn!, ut)
+#     predict_wrapper!(x) = predict!(x, augmented_system, )
 # end
-# function predict!(state::AbstractUncertainState, sys::AbstractSystem,
-#                   ut::UnscentedTransform, t::Real)
-#     fcn!(x) = predict!(x, sys, t)
-#     transform!(state, fcn!, ut)
-# end
+function predict(state::UncertainDiscreteState, sys::AbstractSystem,
+                 ut::UnscentedTransform, t::Integer)
+    predicted_state = state
+    for idx = state.t:t-1
+        augmented_state, augmented_system = augment(predicted_state, sys)
+        predict_wrapper(x) = predict(x, augmented_system, x.t+1)
+        augmented_state = transform(augmented_state, predict_wrapper, ut)
+        predicted_state = reduce_state(augmented_state, length(state.x))
+    end
+    return predicted_state
+end
+
+function predict(state::AbstractUncertainState, obs::AbstractObserver,
+                 ut::UnscentedTransform)
+    augmented_state, augmented_observer = augment(state, obs)
+    predict_wrapper(x) = predict(x, augmented_observer)
+    augmented_prediction = transform(augmented_state, predict_wrapper, ut)
+    return reduce_state(augmented_prediction, size(obs.R,1))
+end
