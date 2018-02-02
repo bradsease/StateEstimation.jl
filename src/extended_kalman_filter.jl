@@ -49,19 +49,10 @@ immutable ExtendedKalmanFilter{T,S<:AbstractUncertainState{T}} <:
         new{T,S}(sys, obs, estimate, consider_states)
     end
 end
-function ExtendedKalmanFilter(sys::NonlinearSystem, obs::NonlinearObserver,
-                              estimate::AbstractUncertainState)
+ExtendedKalmanFilter(sys, obs, estimate) =
     ExtendedKalmanFilter(sys, obs, estimate, [])
-end
-function ExtendedKalmanFilter(sys::NonlinearSystem, obs::NonlinearObserver,
-                              estimate::AbstractAbsoluteState)
-    ExtendedKalmanFilter(sys, obs, make_uncertain(estimate))
-end
-function ExtendedKalmanFilter(sys::NonlinearSystem, obs::NonlinearObserver,
-                              estimate::AbstractAbsoluteState,
-                              consider_states::Vector)
+ExtendedKalmanFilter(sys, obs, estimate::AbstractAbsoluteState, consider_states) =
     ExtendedKalmanFilter(sys, obs, make_uncertain(estimate), consider_states)
-end
 
 
 const DiscreteEKF{T} =

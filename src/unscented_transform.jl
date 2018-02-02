@@ -22,6 +22,67 @@ UnscentedTransform() = UnscentedTransform(1e-3, 2.0, 0.0)
 
 
 """
+    UnscentedKalmanFilter(sys::NonlinearSystem, obs::NonlinearObserver,
+                          estimate::AbstractState[, transform_params::UnscentedTransform,
+                          consider_states::Vector{UInt}])
+
+Unscented Kalman Filter type. The internal filter model currently only supports
+a discrete form:
+
+\$x_k = F(k, x_{k-1}) + w_k\$
+\$y_k = H(k, x_k) + v_k\$
+
+where \$w_k \\sim N(0, Q)\$ and \$v_k \\sim N(0, R)\$.
+
+Construction of an UnscentedKalmanFilter requires an initial estimate.
+Internally, the initial estimate is an uncertain state type. The constructor
+automatically converts absolute initial estimates to uncertain states with zero
+covariance.
+
+The `consider_states` input contains a list of indices of state elements to be
+considered in the filtering process and not updated.
+"""
+immutable UnscentedKalmanFilter{T,S<:AbstractUncertainState{T}} <:
+                                                       AbstractKalmanFilter{T,S}
+    sys::NonlinearSystem{T}
+    obs::NonlinearObserver{T}
+    estimate::S
+    transform_params::UnscentedTransform
+    consider_states::Vector{UInt16}
+
+    function UnscentedKalmanFilter(sys::NonlinearSystem{T},
+                                   obs::NonlinearObserver{T}, estimate::S,
+                                   transform_params::UnscentedTransform,
+                                   consider_states::Vector
+                                   ) where {T, S<:UncertainDiscreteState{T}}
+        if !allunique(consider_states)
+            throw(ArgumentError("Consider state indices must be unique"))
+        end
+        for idx = 1:length(consider_states)
+            if consider_states[idx] > length(estimate.x)
+                throw(DimensionMismatch(
+                    "Consider indices extend beyond length of initial state."))
+            end
+        end
+        new{T,S}(sys, obs, estimate, transform_params, consider_states)
+    end
+end
+UnscentedKalmanFilter(sys, obs, estimate) =
+    UnscentedKalmanFilter(sys, obs, estimate, UnscentedTransform(), [])
+UnscentedKalmanFilter(sys, obs, estimate, transform_params::UnscentedTransform) =
+    UnscentedKalmanFilter(sys, obs, estimate, transform_params, [])
+UnscentedKalmanFilter(sys, obs, estimate, consider_states::Vector) =
+    UnscentedKalmanFilter(sys, obs, estimate, UnscentedTransform(), consider_states)
+function UnscentedKalmanFilter(sys, obs, estimate::AbstractAbsoluteState,
+                               transform_params, consider_states)
+    UnscentedKalmanFilter(sys, obs, make_uncertain(estimate),
+                          transform_params, consider_states)
+end
+
+
+
+
+"""
     compute_weights(ut::UnscentedTransform, state_length::Integer)
 """
 function compute_weights(ut::UnscentedTransform, state_length::Integer)
@@ -206,25 +267,26 @@ end
 
 
 # Unscented prediction methods
-
-# function predict!(state::UncertainDiscreteState, sys::AbstractSystem,
-#                   ut::UnscentedTransform, t::Integer)
-#     # fcn!(x) = predict!(x, sys, t)
-#     # transform!(state, fcn!, ut)
-#     predict_wrapper!(x) = predict!(x, augmented_system, )
-# end
-function predict(state::UncertainDiscreteState, sys::AbstractSystem,
+function predict!(state::UncertainDiscreteState, sys::AbstractSystem,
                  ut::UnscentedTransform, t::Integer)
     predicted_state = state
     for idx = state.t:t-1
         augmented_state, augmented_system = augment(predicted_state, sys)
-        predict_wrapper(x) = predict(x, augmented_system, x.t+1)
-        augmented_state = transform(augmented_state, predict_wrapper, ut)
+        predict_wrapper!(x) = predict!(x, augmented_system, x.t+1)
+        transform!(augmented_state, predict_wrapper!, ut)
         predicted_state = reduce_state(augmented_state, length(state.x))
     end
+    state.x .= predicted_state.x
+    state.P .= predicted_state.P
+    state.t = predicted_state.t
+    return nothing
+end
+function predict(state::UncertainDiscreteState, sys::AbstractSystem,
+                 ut::UnscentedTransform, t::Integer)
+    predicted_state = deepcopy(state)
+    predict!(predicted_state, sys, ut, t)
     return predicted_state
 end
-
 function predict(state::AbstractUncertainState, obs::AbstractObserver,
                  ut::UnscentedTransform)
     augmented_state, augmented_observer = augment(state, obs)

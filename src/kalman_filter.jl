@@ -54,18 +54,9 @@ immutable KalmanFilter{T,S<:AbstractUncertainState{T}} <: AbstractKalmanFilter{T
         new{T,S}(sys, obs, estimate, consider_states)
     end
 end
-function KalmanFilter(sys::LinearSystem, obs::LinearObserver,
-                      estimate::AbstractUncertainState)
-    KalmanFilter(sys, obs, estimate, [])
-end
-function KalmanFilter(sys::LinearSystem, obs::LinearObserver,
-                      estimate::AbstractAbsoluteState)
-    KalmanFilter(sys, obs, make_uncertain(estimate))
-end
-function KalmanFilter(sys::LinearSystem, obs::LinearObserver,
-                      estimate::AbstractAbsoluteState, consider_states::Vector)
+KalmanFilter(sys, obs, estimate) = KalmanFilter(sys, obs, estimate, [])
+KalmanFilter(sys, obs, estimate::AbstractAbsoluteState, consider_states) =
     KalmanFilter(sys, obs, make_uncertain(estimate), consider_states)
-end
 
 
 const DiscreteKalmanFilter{T} =

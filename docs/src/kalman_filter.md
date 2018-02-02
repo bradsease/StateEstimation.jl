@@ -13,6 +13,12 @@ KalmanFilter
 ExtendedKalmanFilter
 ```
 
+## UnscentedKalmanFilter
+
+```@docs
+UnscentedKalmanFilter
+```
+
 ## Methods
 
 ```@docs

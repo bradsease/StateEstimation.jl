@@ -18,12 +18,12 @@ export
     AbstractObserver, LinearObserver, NonlinearObserver, observable,
     # Data archiving
     EstimatorHistory, plot_archive,
-    # Unscented Transform
-    UnscentedTransform, compute_weights, compute_sigma_points, transform,
-    trasnform!, augment,
     # Kalman filters
     AbstractKalmanFilter, KalmanFilter, ExtendedKalmanFilter, simulate,
     process!, inaccurate_simulate,
+    # Unscented Kalman filter
+    UnscentedTransform, compute_weights, compute_sigma_points, transform,
+    trasnform!, augment, UnscentedKalmanFilter,
     # Least squares estimation
     LeastSquaresEstimator, NonlinearLeastSquaresEstimator, add!, solve, solve!,
     # Multi-target filtering
@@ -42,10 +42,9 @@ include("systems.jl")
 include("observers.jl")
 include("archive.jl")
 
-include("unscented_transform.jl")
-
 include("kalman_filter.jl")
 include("extended_kalman_filter.jl")
+include("unscented_transform.jl")
 #include("unscented_kalman_filter.jl")
 include("multi_target_filter.jl")
 

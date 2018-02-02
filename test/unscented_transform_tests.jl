@@ -61,6 +61,9 @@ augment(dstate, sys, obs)
 augment(dstate, nsys, obs)
 augment(dstate, sys, nobs)
 augment(dstate, nsys, nobs)
+UnscentedKalmanFilter(nsys, nobs, dstate)
+UnscentedKalmanFilter(nsys, nobs, dstate, UnscentedTransform())
+UnscentedKalmanFilter(nsys, nobs, dstate, [1])
 
 
 
