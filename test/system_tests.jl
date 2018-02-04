@@ -74,6 +74,7 @@ discrete_nl_fcn(t, x::Vector) = x.^2;
 discrete_nl_jac(t, x::Vector) = diagm(2*x)
 NonlinearSystem(discrete_nl_fcn, discrete_nl_jac, 1.0)
 NonlinearSystem(discrete_nl_fcn, discrete_nl_jac, eye(2))
+NonlinearSystem(LinearSystem(ones(2,2), eye(2)))
 
 # Test state transtion matrix methods
 continuous_nl_fcn(t, x::Vector) = -x.^2;

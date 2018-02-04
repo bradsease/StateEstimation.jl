@@ -59,6 +59,7 @@ discrete_nl_fcn(t, x::Vector) = x.^2;
 discrete_nl_jac(t, x::Vector) = diagm(2*x)
 NonlinearObserver(discrete_nl_fcn, discrete_nl_jac, eye(2))
 NonlinearObserver(discrete_nl_fcn, discrete_nl_jac, 1.0)
+NonlinearObserver(LinearObserver(ones(2,2), eye(2)))
 
 # Test nonlinear absolute state prediction methods
 nonlin_obs = NonlinearObserver(discrete_nl_fcn, discrete_nl_jac, eye(3))

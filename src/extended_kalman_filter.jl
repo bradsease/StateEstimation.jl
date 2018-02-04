@@ -33,9 +33,7 @@ immutable ExtendedKalmanFilter{T,S<:AbstractUncertainState{T}} <:
     estimate::S
     consider_states::Vector{UInt16}
 
-    function ExtendedKalmanFilter(sys::NonlinearSystem{T},
-                                  obs::NonlinearObserver{T}, estimate::S,
-                                  consider_states::Vector
+    function ExtendedKalmanFilter(sys, obs, estimate::S, consider_states::Vector
                                   ) where {T, S<:AbstractUncertainState{T}}
         if !allunique(consider_states)
             throw(ArgumentError("Consider state indices must be unique"))
@@ -46,7 +44,8 @@ immutable ExtendedKalmanFilter{T,S<:AbstractUncertainState{T}} <:
                     "Consider indices extend beyond length of initial state."))
             end
         end
-        new{T,S}(sys, obs, estimate, consider_states)
+        new{T,S}(NonlinearSystem(sys), NonlinearObserver(obs), estimate,
+                 consider_states)
     end
 end
 ExtendedKalmanFilter(sys, obs, estimate) =

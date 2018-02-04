@@ -82,7 +82,11 @@ end
 NonlinearSystem(F::Function, dF_dx::Function, Q::AbstractFloat,
     predict_tolerances=(1e-3, 1e-3)) =
     NonlinearSystem(F, dF_dx, reshape([Q], 1, 1), predict_tolerances)
-
+function NonlinearSystem(lin_sys::LinearSystem)
+    F(t,x) = lin_sys.A*x
+    dF_dx(t,x) = lin_sys.A
+    return NonlinearSystem(F, dF_dx, lin_sys.Q)
+end
 
 """
     assert_compatibility(sys::AbstractSystem{T}, state::AbstractState{T})

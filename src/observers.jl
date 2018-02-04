@@ -71,23 +71,27 @@ struct NonlinearObserver{T<:AbstractFloat} <: AbstractObserver{T}
 end
 NonlinearObserver(H::Function, dH_dx::Function, R::AbstractFloat) =
     NonlinearObserver(H, dH_dx, reshape([R], 1, 1))
+function NonlinearObserver(lin_obs::LinearObserver)
+    H(t,x) = lin_obs.H*x
+    dH_dx(t,x) = lin_obs.H
+    return NonlinearObserver(H, dH_dx, lin_obs.R)
+end
 
 
 """
     assert_compatibility(obs::LinearObserver{T}, state::AbstractState{T})
 
 Require linear observer dimensions to be compatible with input state.
+
+    assert_compatibility(state::AbstractState{T}, obs::LinearObserver{T})
+
+Require linear observer dimensions to be left-compatible with input state.
 """
 function assert_compatibility{T}(obs::LinearObserver{T},state::AbstractState{T})
     if size(obs.H, 2) != length(state.x)
         throw(DimensionMismatch("Observer incompatible with input state."))
     end
 end
-"""
-    assert_compatibility(state::AbstractState{T}, obs::LinearObserver{T})
-
-Require linear observer dimensions to be left-compatible with input state.
-"""
 function assert_compatibility{T}(state::AbstractState{T},obs::AbstractObserver{T})
     if size(obs.R, 1) != length(state.x)
         throw(DimensionMismatch("Observer incompatible with input state."))
