@@ -16,6 +16,10 @@ ExtendedKalmanFilter
 ## UnscentedKalmanFilter
 
 ```@docs
+UnscentedTransform
+```
+
+```@docs
 UnscentedKalmanFilter
 ```
 

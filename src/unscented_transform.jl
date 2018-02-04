@@ -4,10 +4,11 @@
 
 
 """
-    UnscentedTransform()
     UnscentedTransform(alpha::Real, beta::Real, kappa::Real)
 
-Parameters to configure an Unscented Transform.
+Parameters to configure an Unscented Transform. When called with no arguments,
+the constructor returns a default Unscented Transform parameter set with
+\$\\alpha = 0.001\$, \$\\beta = 2.0\$, and \$\\kappa = 0.0\$.
 """
 immutable UnscentedTransform
     alpha::AbstractFloat
@@ -39,8 +40,18 @@ Internally, the initial estimate is an uncertain state type. The constructor
 automatically converts absolute initial estimates to uncertain states with zero
 covariance.
 
+The `UnscentedKalmanFilter` uses the default `UnscentedTransform` if
+transform_params are not provided. See the `UnscentedTransform` documentation
+for more details.
+
 The `consider_states` input contains a list of indices of state elements to be
 considered in the filtering process and not updated.
+
+Implementation based on:
+
+Wan, A. and Merwe, R., "The unscented Kalman filter for nonlinear estimation",
+In proc. Adaptive Systems for Signal Processing, Communications, and Control
+Symposium, pp.153--158, 2000.
 """
 immutable UnscentedKalmanFilter{T,S<:AbstractUncertainState{T}} <:
                                                        AbstractKalmanFilter{T,S}
@@ -116,12 +127,12 @@ end
 
 
 """
-    update_state_from_sigma_points!(state, sigma_points, Wm, Wc)
+    get_state_from_sigma_points!(state, sigma_points, Wm, Wc)
 
 Process predicted sigma points and weighting coefficients to perform an in-place
 update of a provided uncertain state.
 """
-function update_state_from_sigma_points!(state::AbstractUncertainState,
+function get_state_from_sigma_points!(state::AbstractUncertainState,
                                          sigma_points, Wm, Wc)
     state.x .= 0
     for idx = 1:length(sigma_points)
@@ -138,6 +149,18 @@ function update_state_from_sigma_points!(state::AbstractUncertainState,
     return nothing
 end
 
+"""
+    get_state_from_sigma_points(sigma_points, Wm, Wc)
+
+Process predicted sigma points and weighting coefficients to produce a combined
+state estimate.
+"""
+function get_state_from_sigma_points(sigma_points, Wm, Wc)
+    state = make_uncertain(sigma_points[1])
+    get_state_from_sigma_points!(state, sigma_points, Wm, Wc)
+    return state
+end
+
 
 """
     transform(state::AbstractUncertainState, fcn::Function, ut::UnscentedTransform)
@@ -148,9 +171,7 @@ function transform(state::AbstractUncertainState, fcn::Function, ut::UnscentedTr
     for idx = 1:length(sigma_points)
         sigma_points[idx] = fcn(sigma_points[idx])
     end
-    transformed_state = make_uncertain(sigma_points[1])
-    update_state_from_sigma_points!(transformed_state, sigma_points, Wm, Wc)
-    return transformed_state
+    return get_state_from_sigma_points(sigma_points, Wm, Wc)
 end
 
 
@@ -163,7 +184,7 @@ function transform!(state::AbstractUncertainState, fcn!::Function, ut::Unscented
     for idx = 1:length(sigma_points)
         fcn!(sigma_points[idx])
     end
-    update_state_from_sigma_points!(state, sigma_points, Wm, Wc)
+    get_state_from_sigma_points!(state, sigma_points, Wm, Wc)
     return nothing
 end
 
@@ -188,7 +209,8 @@ function augment(state::UncertainDiscreteState, sys::NonlinearSystem)
     n = length(state.x)
     augmented_state = expand_state(state, zeros(n), sys.Q)
     augmented_F(t, x) = vcat(sys.F(t, x[1:n]) + x[n+1:end], x[n+1:end])
-    augmented_dF(t, x) = hvcat((2,2), sys.dF_dx(t,x[1:n]), eye(n,n), zeros(n,n), eye(n,n))
+    augmented_dF(t, x) = hvcat((2,2), sys.dF_dx(t,x[1:n]), eye(n,n),
+                                      zeros(n,n), eye(n,n))
     augmented_system = NonlinearSystem(augmented_F, augmented_dF, zeros(2*n,2*n))
     return augmented_state, augmented_system
 end
@@ -265,8 +287,9 @@ function augment(state::UncertainDiscreteState, sys::NonlinearSystem, obs::Nonli
 end
 
 
-
+#
 # Unscented prediction methods
+#
 function predict!(state::UncertainDiscreteState, sys::AbstractSystem,
                  ut::UnscentedTransform, t::Integer)
     predicted_state = state
@@ -322,14 +345,10 @@ function kalman_predict(ukf::UnscentedKalmanFilter, t)
     fcn(x) = predict(x, augmented_observer)
     measurement_sigma_points = [fcn(x) for x in sigma_points]
 
-    # Compute xk
-    augmented_xk = make_uncertain(sigma_points[1])
-    update_state_from_sigma_points!(augmented_xk, sigma_points, Wm, Wc)
-    xk = reduce_state(augmented_xk, length(ukf.estimate.x))
-
-    # Compute yk
-    yk = make_uncertain(measurement_sigma_points[1])
-    update_state_from_sigma_points!(yk, measurement_sigma_points, Wm, Wc)
+    # Compute xk and yk
+    xk = reduce_state(get_state_from_sigma_points(sigma_points, Wm, Wc),
+                      length(ukf.estimate.x))
+    yk = get_state_from_sigma_points(measurement_sigma_points, Wm, Wc)
 
     # Compute Pxy
     n = length(xk.x)
