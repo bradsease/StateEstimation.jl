@@ -44,14 +44,14 @@ considered in the filtering process and not updated.
 """
 immutable UnscentedKalmanFilter{T,S<:AbstractUncertainState{T}} <:
                                                        AbstractKalmanFilter{T,S}
-    sys::NonlinearSystem{T}
-    obs::NonlinearObserver{T}
+    sys::AbstractSystem{T}
+    obs::AbstractObserver{T}
     estimate::S
     transform_params::UnscentedTransform
     consider_states::Vector{UInt16}
 
-    function UnscentedKalmanFilter(sys::NonlinearSystem{T},
-                                   obs::NonlinearObserver{T}, estimate::S,
+    function UnscentedKalmanFilter(sys::AbstractSystem{T},
+                                   obs::AbstractObserver{T}, estimate::S,
                                    transform_params::UnscentedTransform,
                                    consider_states::Vector
                                    ) where {T, S<:UncertainDiscreteState{T}}
@@ -104,7 +104,7 @@ function compute_sigma_points(x::AbstractUncertainState,
     sigma_points = fill(make_absolute(x), 1)
     state_length = length(x.x)
     lambda = ut.alpha^2*(state_length + ut.kappa) - state_length
-    perturbation = chol((state_length + lambda)*x.P)
+    perturbation = chol(Hermitian((state_length + lambda)*x.P))
     for idx = 1:state_length
         @inbounds push!(sigma_points, sigma_points[1] + perturbation[:,idx])
     end
@@ -112,6 +112,30 @@ function compute_sigma_points(x::AbstractUncertainState,
         @inbounds push!(sigma_points, sigma_points[1] - perturbation[:,idx])
     end
     return sigma_points
+end
+
+
+"""
+    update_state_from_sigma_points!(state, sigma_points, Wm, Wc)
+
+Process predicted sigma points and weighting coefficients to perform an in-place
+update of a provided uncertain state.
+"""
+function update_state_from_sigma_points!(state::AbstractUncertainState,
+                                         sigma_points, Wm, Wc)
+    state.x .= 0
+    for idx = 1:length(sigma_points)
+     state.x .+= Wm[idx] * sigma_points[idx].x
+    end
+
+    state.P .= 0
+    for idx = 1:length(sigma_points)
+     sigma_diff = sigma_points[idx].x - state.x
+     state.P .+= Wc[idx] * sigma_diff * sigma_diff'
+    end
+
+    state.t = sigma_points[1].t
+    return nothing
 end
 
 
@@ -124,20 +148,8 @@ function transform(state::AbstractUncertainState, fcn::Function, ut::UnscentedTr
     for idx = 1:length(sigma_points)
         sigma_points[idx] = fcn(sigma_points[idx])
     end
-
     transformed_state = make_uncertain(sigma_points[1])
-    transformed_state.x .= 0
-    for idx = 1:length(sigma_points)
-        transformed_state.x .+= Wm[idx] * sigma_points[idx].x
-    end
-
-    transformed_state.P .= 0
-    for idx = 1:length(sigma_points)
-        sigma_diff = sigma_points[idx].x - transformed_state.x
-        transformed_state.P .+= Wc[idx] * sigma_diff * sigma_diff'
-    end
-
-    transformed_state.t = sigma_points[1].t
+    update_state_from_sigma_points!(transformed_state, sigma_points, Wm, Wc)
     return transformed_state
 end
 
@@ -151,19 +163,7 @@ function transform!(state::AbstractUncertainState, fcn!::Function, ut::Unscented
     for idx = 1:length(sigma_points)
         fcn!(sigma_points[idx])
     end
-
-    state.x .= 0
-    for idx = 1:length(sigma_points)
-        state.x .+= Wm[idx] * sigma_points[idx].x
-    end
-
-    state.P .= 0
-    for idx = 1:length(sigma_points)
-        sigma_diff = sigma_points[idx].x - state.x
-        state.P .+= Wc[idx] * sigma_diff * sigma_diff'
-    end
-
-    state.t = sigma_points[1].t
+    update_state_from_sigma_points!(state, sigma_points, Wm, Wc)
     return nothing
 end
 
@@ -211,8 +211,8 @@ function augment(state::UncertainDiscreteState, sys::LinearSystem, obs::LinearOb
     n,m = length(state.x), size(obs.R,1)
     augmented_state = expand_state(state, zeros(n+m), block_diagonal(sys.Q, obs.R))
 
-    augmented_A = hvcat((3,3), sys.A, eye(n,n), zeros(n,m),
-                               zeros(n+m,n), eye(n+m,n), zeros(n+m,m))
+    augmented_A = hvcat((3,2), sys.A, eye(n,n), zeros(n,m),
+                               zeros(n+m,n), eye(n+m,n+m))
     augmented_system = LinearSystem(augmented_A, zeros(size(augmented_A)))
 
     augmented_H = hcat(obs.H, zeros(m,n), eye(m,m))
@@ -224,8 +224,8 @@ function augment(state::UncertainDiscreteState, sys::LinearSystem, obs::Nonlinea
     n,m = length(state.x), size(obs.R,1)
     augmented_state = expand_state(state, zeros(n+m), block_diagonal(sys.Q, obs.R))
 
-    augmented_A = hvcat((3,3), sys.A, eye(n,n), zeros(n,m),
-                               zeros(n+m,n), eye(n+m,n), zeros(n+m,m))
+    augmented_A = hvcat((3,2), sys.A, eye(n,n), zeros(n,m),
+                               zeros(n+m,n), eye(n+m,n+m))
     augmented_system = LinearSystem(augmented_A, zeros(size(augmented_A)))
 
     augmented_H(t, x) = obs.H(t, x[1:n]) + x[2*n+1:end]
@@ -238,7 +238,7 @@ function augment(state::UncertainDiscreteState, sys::NonlinearSystem, obs::Linea
     n,m = length(state.x), size(obs.R,1)
     augmented_state = expand_state(state, zeros(n+m), block_diagonal(sys.Q, obs.R))
 
-    augmented_F(t, x) = vcat(sys.F(t, x[1:n]) + x[n+1:2*n], x[n+1:2*n], zeros(m))
+    augmented_F(t, x) = vcat(sys.F(t, x[1:n]) + x[n+1:2*n], x[n+1:end])
     augmented_dF(t, x) = hvcat((3,3), sys.dF_dx(t,x[1:n]), eye(n,n), zeros(n,m),
                                       zeros(n+m,n), eye(n+m,n), zeros(n+m,m))
     augmented_system = NonlinearSystem(augmented_F, augmented_dF, zeros(2*n+m,2*n+m))
@@ -252,7 +252,7 @@ function augment(state::UncertainDiscreteState, sys::NonlinearSystem, obs::Nonli
     n,m = length(state.x), size(obs.R,1)
     augmented_state = expand_state(state, zeros(n+m), block_diagonal(sys.Q, obs.R))
 
-    augmented_F(t, x) = vcat(sys.F(t, x[1:n]) + x[n+1:2*n], x[n+1:2*n], zeros(m))
+    augmented_F(t, x) = vcat(sys.F(t, x[1:n]) + x[n+1:2*n], x[n+1:end])
     augmented_dF(t, x) = hvcat((3,3), sys.dF_dx(t,x[1:n]), eye(n,n), zeros(n,m),
                                       zeros(n+m,n), eye(n+m,n), zeros(n+m,m))
     augmented_system = NonlinearSystem(augmented_F, augmented_dF, zeros(2*n+m,2*n+m))
@@ -293,4 +293,51 @@ function predict(state::AbstractUncertainState, obs::AbstractObserver,
     predict_wrapper(x) = predict(x, augmented_observer)
     augmented_prediction = transform(augmented_state, predict_wrapper, ut)
     return reduce_state(augmented_prediction, size(obs.R,1))
+end
+
+
+"""
+    kalman_predict(ukf::UnscentedKalmanFilter, t)
+"""
+function kalman_predict(ukf::UnscentedKalmanFilter, t)
+
+    # Predict to t-1, if necesary
+    if (t > ukf.estimate.t+1)
+        predict!(ukf.estimate, ukf.sys, ukf.transform_params, t-1)
+    end
+
+    # Set up unscented transform
+    augmented_state, augmented_system, augmented_observer =
+        augment(ukf.estimate, ukf.sys, ukf.obs)
+    Wm, Wc = compute_weights(ukf.transform_params, length(augmented_state.x))
+    sigma_points = compute_sigma_points(augmented_state, ukf.transform_params)
+
+    # Predict sigma points through system
+    fcn!(x) = predict!(x, augmented_system, x.t+1)
+    for idx = 1:length(sigma_points)
+        fcn!(sigma_points[idx])
+    end
+
+    # Predict sigma points through observer
+    fcn(x) = predict(x, augmented_observer)
+    measurement_sigma_points = [fcn(x) for x in sigma_points]
+
+    # Compute xk
+    augmented_xk = make_uncertain(sigma_points[1])
+    update_state_from_sigma_points!(augmented_xk, sigma_points, Wm, Wc)
+    xk = reduce_state(augmented_xk, length(ukf.estimate.x))
+
+    # Compute yk
+    yk = make_uncertain(measurement_sigma_points[1])
+    update_state_from_sigma_points!(yk, measurement_sigma_points, Wm, Wc)
+
+    # Compute Pxy
+    n = length(xk.x)
+    Pxy = zeros(length(xk.x), length(yk.x))
+    for idx = 1:length(sigma_points)
+        Pxy .+= Wc[idx] * (sigma_points[idx].x[1:n] - xk.x) *
+                (measurement_sigma_points[idx].x - yk.x)'
+    end
+
+    return xk, yk, Pxy
 end

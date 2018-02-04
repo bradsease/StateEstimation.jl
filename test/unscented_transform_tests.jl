@@ -81,3 +81,19 @@ ut_state = predict(dstate, sys, ut, 2)
 expected_state = predict(dstate, sys, 2)
 @test isapprox(ut_state.x, expected_state.x)
 @test isapprox(ut_state.P, expected_state.P)
+
+
+# Test discrete kalman filter
+srand(1);
+linear_sys = LinearSystem(0.5*eye(2), 0.001*eye(2))
+linear_obs = LinearObserver(eye(2), 0.001*eye(2))
+initial_est = UncertainDiscreteState([1.0, 2.0], 0.1*eye(2))
+ukf = UnscentedKalmanFilter(linear_sys, linear_obs, initial_est)
+kf = UnscentedKalmanFilter(linear_sys, linear_obs, initial_est)
+simulator = make_simulator(kf)
+for i = 1:10
+    true_state, measurement = simulate(simulator, i)
+    process!(ukf, measurement)
+    process!(kf, measurement)
+    @test isapprox(ukf.estimate.x, kf.estimate.x)
+end
