@@ -7,6 +7,10 @@
 LeastSquaresEstimator
 ```
 
+```@docs
+NonlinearLeastSquaresEstimator
+```
+
 ## Methods
 
 ```@docs

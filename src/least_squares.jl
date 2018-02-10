@@ -51,6 +51,31 @@ end
 """
     NonlinearLeastSquaresEstimator(sys::NonlinearSystem, obs::NonlinearObserver,
         estimate::AbstractState[, tolerance::AbstractFloat, max_iterations::Integer])
+
+Nonlinear least squares estimator type. The internal estimator model takes on a
+specific form depending on the type of the initial estimate. For a `DiscreteState`,
+
+\$x_k = F(k, x_{k-1}) + w_k\$
+\$y_k = H(k, x_k) + v_k\$
+
+where \$w_k \\sim N(0, Q)\$ and \$v_k \\sim N(0, R)\$. For a `ContinuousState`,
+
+\$\\dot{x}(t_k) = F(t_k, x(t_k)) + w(t_k)\$
+\$y(t_k) = H(t_k, x(t_k)) + v(t_k)\$
+
+Construction of a NonlinearLeastSquaresEstimator requires an initial estimate.
+Internally, the initial estimate is an uncertain state type. The constructor
+automatically converts absolute initial estimates to uncertain states with zero
+covariance.
+
+Convergence tolerance and maximum iteration settings are optional. The default
+tolerance is 0.01 and the default maximum number of iterations is 15. Convergence
+occurs when
+
+\$\\left\\| \\frac{\\Delta x_i}{x_i} \\right\\| \\leq \\epsilon\$
+
+for \$i = 1, \\ldots, n\$ where \$n\$ is the dimension of the state and \$\\epsilon\$
+is the convergence tolerance.
 """
 immutable NonlinearLeastSquaresEstimator{T,S<:AbstractUncertainState{T},
                             M<:AbstractAbsoluteState{T}} <: BatchEstimator{T,S}
@@ -183,9 +208,10 @@ function solve{T}(nlse::NonlinearLeastSquaresEstimator{T})
 
     estimate = deepcopy(nlse.estimate)
     convergence = nlse.tolerance+1
+    convergence = fill(nlse.tolerance+1, size(nlse.estimate.x))
     iteration_count = nlse.max_iterations
 
-    while convergence > nlse.tolerance && iteration_count > 0
+    while any(convergence .> nlse.tolerance) && iteration_count > 0
         for idx = 1:length(nlse.measurements)
             start_idx = (idx-1)*m + 1
             end_idx = start_idx + m - 1
@@ -204,7 +230,7 @@ function solve{T}(nlse::NonlinearLeastSquaresEstimator{T})
         temp = inv(A*A')*A
         delta = temp * b
         estimate.x += delta
-        convergence = norm(delta ./ estimate.x)
+        convergence = abs.(delta ./ estimate.x)
         iteration_count -= 1
     end
 
