@@ -88,6 +88,7 @@ function NonlinearSystem(lin_sys::LinearSystem)
     return NonlinearSystem(F, dF_dx, lin_sys.Q)
 end
 
+
 """
     assert_compatibility(sys::AbstractSystem{T}, state::AbstractState{T})
 

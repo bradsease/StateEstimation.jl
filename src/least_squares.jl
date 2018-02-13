@@ -87,16 +87,15 @@ immutable NonlinearLeastSquaresEstimator{T,S<:AbstractUncertainState{T},
     tolerance::T
     max_iterations::UInt16
 
-    function NonlinearLeastSquaresEstimator(sys::NonlinearSystem{T},
-        obs::NonlinearObserver{T}, estimate::S, tol=1e-2, max_iterations=15,
-        ) where {T,S<:AbstractUncertainState{T}}
+    function NonlinearLeastSquaresEstimator(sys, obs, estimate::S, tol=1e-2,
+        max_iterations=15) where {T,S<:AbstractUncertainState{T}}
         M = absolute_type(estimate)
-        new{T,S,M}(sys, obs, estimate, Vector{M}([]), tol, max_iterations)
+        new{T,S,M}(NonlinearSystem(sys), NonlinearObserver(obs), estimate,
+                   Vector{M}([]), tol, max_iterations)
     end
 end
-function NonlinearLeastSquaresEstimator(sys::NonlinearSystem,
-    obs::NonlinearObserver, estimate::AbstractAbsoluteState,
-    tol=1e-2, max_iterations=15)
+function NonlinearLeastSquaresEstimator(sys, obs, estimate::AbstractAbsoluteState,
+                                        tol=1e-2, max_iterations=15)
     NonlinearLeastSquaresEstimator(sys, obs, make_uncertain(estimate), tol)
 end
 
