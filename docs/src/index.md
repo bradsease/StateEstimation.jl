@@ -2,8 +2,8 @@
 
 A collection of state estimators and related tools in Julia. Currently includes
 support for:
-* Kalman Filter (Linear and Extended)
-* Batch Least Squares (Linear)
+* Kalman Filter (Linear, Extended, and Unscented)
+* Batch Least Squares (Linear and Nonlinear)
 * Multi-Target Tracking
 
 

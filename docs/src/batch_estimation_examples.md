@@ -113,7 +113,7 @@ solve!(bls)
 In this example, we will create a `NonlinearLeastSquaresEstimator` to estimate
 the state of a nonlinear pendulum described by the following dynamics.
 
-$F(t,\vec{x}) = \left[ \begin{array}{c} \dot{x}_1 \\ \dot{x}_2 \end{array} \right] = \left[ \begin{array}{c} x_2 \\ - \sin x_1 \end{array} \right]$
+$\left[ \begin{array}{c} \dot{x}_1 \\ \dot{x}_2 \end{array} \right] = F(t,\vec{x}) = \left[ \begin{array}{c} x_2 \\ - \sin x_1 \end{array} \right]$
 
 To estimate the state of this nonlinear system, we also need the Jacobian of
 $F$. The Jacobian is

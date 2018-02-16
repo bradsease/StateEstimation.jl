@@ -11,7 +11,7 @@ makedocs(
             "Linear Filtering" => "kalman_filter_examples.md",
             "Nonlinear Filtering" => "nonlinear_kalman_filter_examples.md",
             "Batch Estimation" => "batch_estimation_examples.md",
-            "Multi-Target Tracking" => "multi_target_examples.md"
+            #"Multi-Target Tracking" => "multi_target_examples.md"
             ],
         "All Documentation" => Any[
             "Core Components" => Any[
