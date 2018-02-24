@@ -20,10 +20,12 @@ export
     EstimatorHistory, plot_state_history, plot_residuals,
     # Kalman filters
     AbstractKalmanFilter, KalmanFilter, ExtendedKalmanFilter, simulate,
-    process!, inaccurate_simulate,
+    process!, kalman_filter, kalman_filter!, extended_kalman_filter,
+    extended_kalman_filter!,
     # Unscented Kalman filter
     UnscentedTransform, compute_weights, compute_sigma_points, transform,
-    trasnform!, augment, UnscentedKalmanFilter,
+    trasnform!, augment, UnscentedKalmanFilter, unscented_kalman_filter,
+    unscented_kalman_filter!,
     # Least squares estimation
     LeastSquaresEstimator, NonlinearLeastSquaresEstimator, add!, solve, solve!,
     # Multi-target filtering

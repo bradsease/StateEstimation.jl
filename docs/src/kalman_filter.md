@@ -28,3 +28,15 @@ UnscentedKalmanFilter
 ```@docs
 process!(::AbstractKalmanFilter)
 ```
+
+```@docs
+kalman_filter
+```
+
+```@docs
+extended_kalman_filter
+```
+
+```@docs
+unscented_kalman_filter
+```

@@ -360,3 +360,48 @@ function kalman_predict(ukf::UnscentedKalmanFilter, t)
 
     return xk, yk, Pxy
 end
+
+
+"""
+    unscented_kalman_filter!(state, system, observer, ut_params, measurement[, archive])
+
+Unscented Kalman Filter convenience function. Performs a single filter
+iteration, updating the provided state in-place. This function is not as
+efficient as constructing creating a static `UnscentedKalmanFilter` and using
+the `process!` method, but allows for increased flexibility.
+
+Use `unscented_kalman_filter` for not-in-place state updates.
+"""
+function unscented_kalman_filter!(state, system, observer, ut_params, measurement)
+    ukf = UnscentedKalmanFilter(system, observer, state, ut_params)
+    process!(ukf, measurement)
+end
+function unscented_kalman_filter!(state, system, observer, ut_params,
+                                  measurement, archive)
+    ukf = UnscentedKalmanFilter(system, observer, state, ut_params)
+    process!(ukf, measurement, archive)
+end
+
+
+"""
+unscented_kalman_filter(state, system, observer, ut_params, measurement[, archive])
+
+Unscented Kalman Filter convenience function. Performs a single filter iteration
+This function is not as efficient as constructing creating a static
+`UnscentedKalmanFilter` and using the `process!` method, but allows for increased
+flexibility.
+
+Use `unscented_kalman_filter!` for in-place state updates.
+"""
+function unscented_kalman_filter(state, system, observer, ut_params, measurement)
+    out_state = deepcopy(state)
+    unscented_kalman_filter!(out_state, system, observer, ut_params, measurement)
+    return out_state
+end
+function unscented_kalman_filter(state, system, observer, ut_params,
+                                 measurement, archive)
+    out_state = deepcopy(state)
+    unscented_kalman_filter!(out_state, system, observer, ut_params,
+                            measurement, archive)
+    return out_state
+end

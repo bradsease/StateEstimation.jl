@@ -113,3 +113,31 @@ for idx = 1:10
     process!(ukf, measurement)
     @test mahalanobis(true_state, ukf.estimate) < 3
 end
+
+
+
+
+# Test convenience function
+srand(1);
+F(t,x) = [sin(x[2]), -x[1]]
+dF_dx(t,x) = [0 cos(x[2]); -1 0]
+nonlinear_sys = NonlinearSystem(F, dF_dx, 0.01*eye(2,2))
+linear_obs = LinearObserver(eye(2), 0.1*eye(2))
+estimate = UncertainDiscreteState([0.0, 2.0], 0.1*eye(2))
+ut_params = UnscentedTransform()
+ukf = UnscentedKalmanFilter(nonlinear_sys, linear_obs, estimate)
+simulator = make_simulator(ukf)
+for idx = 1:10
+    true_state, measurement = simulate(simulator, idx)
+    estimate = unscented_kalman_filter(
+        estimate, nonlinear_sys, linear_obs, ut_params, measurement)
+end
+
+# Test convenience function with archiving
+simulator = make_simulator(ukf)
+archive = EstimatorHistory(ukf)
+for idx = 1:10
+    true_state, measurement = simulate(simulator, idx)
+    estimate = unscented_kalman_filter(
+        estimate, nonlinear_sys, linear_obs, ut_params, measurement, archive)
+end

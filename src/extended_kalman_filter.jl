@@ -69,3 +69,45 @@ function kalman_predict(ekf::ExtendedKalmanFilter, t)
     Pxy = xk.P * ekf.obs.dH_dx(t, ekf.estimate.x)'
     return xk, yk, Pxy
 end
+
+
+"""
+    extended_kalman_filter!(state, system, observer, measurement[, archive])
+
+Extended Kalman Filter convenience function. Performs a single Kalman Filter
+iteration, updating the provided state in-place. This function is not as
+efficient as constructing creating a static `ExtendedKalmanFilter` and using the
+`process!` method, but allows for increased flexibility.
+
+Use `extended_kalman_filter` for not-in-place state updates.
+"""
+function extended_kalman_filter!(state, system, observer, measurement)
+    ekf = ExtendedKalmanFilter(system, observer, state)
+    process!(ekf, measurement)
+end
+function extended_kalman_filter!(state, system, observer, measurement, archive)
+    ekf = ExtendedKalmanFilter(system, observer, state)
+    process!(ekf, measurement, archive)
+end
+
+
+"""
+extended_kalman_filter(state, system, observer, measurement[, archive])
+
+Extended Kalman Filter convenience function. Performs a single Kalman Filter
+iteration. This function is not as efficient as constructing creating a static
+`ExtendedKalmanFilter` and using the `process!` method, but allows for increased
+flexibility.
+
+Use `extended_kalman_filter!` for in-place state updates.
+"""
+function extended_kalman_filter(state, system, observer, measurement)
+    out_state = deepcopy(state)
+    extended_kalman_filter!(out_state, system, observer, measurement)
+    return out_state
+end
+function extended_kalman_filter(state, system, observer, measurement, archive)
+    out_state = deepcopy(state)
+    extended_kalman_filter!(out_state, system, observer, measurement, archive)
+    return out_state
+end

@@ -157,3 +157,45 @@ function process!(kf::AbstractContinuousKalmanFilter, zk::ContinuousState,
     push!(archive.residuals, UncertainContinuousState(zk.x - yk.x, yk.P, zk.t))
     return nothing
 end
+
+
+"""
+    kalman_filter!(state, system, observer, measurement[, archive])
+
+Kalman Filter convenience function. Performs a single Kalman Filter iteration,
+updating the provided state in-place. This function is not as efficient as
+constructing creating a static `KalmanFilter` and using the `process!` method,
+but allows for increased flexibility.
+
+Use `kalman_filter!` for not-in-place state updates.
+"""
+function kalman_filter!(state, system, observer, measurement)
+    kf = KalmanFilter(system, observer, state)
+    process!(kf, measurement)
+end
+function kalman_filter!(state, system, observer, measurement, archive)
+    kf = KalmanFilter(system, observer, state)
+    process!(kf, measurement, archive)
+end
+
+
+"""
+kalman_filter(state, system, observer, measurement[, archive])
+
+Kalman Filter convenience function. Performs a single Kalman Filter iteration.
+This function is not as efficient as constructing creating a static
+`KalmanFilter` and using the `process!` method, but allows for increased
+flexibility.
+
+Use `kalman_filter!` for in-place state updates.
+"""
+function kalman_filter(state, system, observer, measurement)
+    out_state = deepcopy(state)
+    kalman_filter!(out_state, system, observer, measurement)
+    return out_state
+end
+function kalman_filter(state, system, observer, measurement, archive)
+    out_state = deepcopy(state)
+    kalman_filter!(out_state, system, observer, measurement, archive)
+    return out_state
+end
