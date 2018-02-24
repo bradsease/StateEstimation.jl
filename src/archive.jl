@@ -20,21 +20,47 @@ end
 
 
 """
-    plot_archive(archive::EstimatorHistory)
-
-Plot the contents of an estimator history archive.
+    vectorize_state_history(state_history::Vector)
 """
-function plot_archive(archive::EstimatorHistory)
-    t = archive.states[1].t
-    data = archive.states[1].x'
-    cov = sqrt.(diag(archive.states[1].P))'
+function vectorize_state_history(state_history::Vector)
+    state_length = length(state_history[1].x)
+    num_states = length(state_history)
 
-    for i = 1:length(archive.states)
-        t = vcat(t, archive.states[i].t)
-        data = vcat(data, archive.states[i].x')
-        cov = vcat(cov, sqrt.(diag(archive.states[i].P))')
+    times = fill(0*state_history[1].t, num_states)
+    states = fill(0*state_history[1].x[1], (num_states, state_length))
+    sigmas = fill(0*state_history[1].x[1], (num_states, state_length))
+
+    for i = 1:num_states
+        times[i] .= state_history[i].t
+        states[i,:] .= state_history[i].x
+        sigmas[i,:] .= sqrt.(diag(state_history[i].P))
     end
 
+    return times, states, sigmas
+end
+
+
+"""
+    plot_state_history(archive::EstimatorHistory)
+
+Plot the state history in an estimator history archive.
+"""
+function plot_state_history(archive::EstimatorHistory)
+    t, data, cov = vectorize_state_history(archive.states)
+    scatter(t, data, markersize=1, markercolor="black",
+            layout=(length(archive.states[1].x), 1), legend=false)
+    plot!(t, data+3*cov, linestyle=:dot, color="gray")
+    plot!(t, data-3*cov, linestyle=:dot, color="gray")
+end
+
+
+"""
+    plot_residuals(archive::EstimatorHistory)
+
+Plot the residuals in an estimator history archive.
+"""
+function plot_residuals(archive::EstimatorHistory)
+    t, data, cov = vectorize_state_history(archive.residuals)
     scatter(t, data, markersize=1, markercolor="black",
             layout=(length(archive.states[1].x), 1), legend=false)
     plot!(t, data+3*cov, linestyle=:dot, color="gray")

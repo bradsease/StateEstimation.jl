@@ -125,13 +125,14 @@ function process!(kf::AbstractDiscreteKalmanFilter, zk::DiscreteState)
 end
 function process!(kf::AbstractDiscreteKalmanFilter, zk::DiscreteState,
                   archive::EstimatorHistory)
+    if length(archive.states) == 0
+      push!(archive.states, deepcopy(kf.estimate))
+    end
+
     xk, yk, Pxy = kalman_predict(kf, zk.t)
     kf.estimate .= xk
     kalman_update!(kf, yk, zk, Pxy)
 
-    if length(archive.states) == 0
-        push!(archive.states, deepcopy(kf.estimate))
-    end
     push!(archive.states, deepcopy(kf.estimate))
     push!(archive.residuals, UncertainDiscreteState(zk.x - yk.x, yk.P, zk.t))
     return nothing
@@ -144,13 +145,14 @@ function process!(kf::AbstractContinuousKalmanFilter, zk::ContinuousState)
 end
 function process!(kf::AbstractContinuousKalmanFilter, zk::ContinuousState,
                   archive::EstimatorHistory)
+    if length(archive.states) == 0
+      push!(archive.states, deepcopy(kf.estimate))
+    end
+
     xk, yk, Pxy = kalman_predict(kf, zk.t)
     kf.estimate .= xk
     kalman_update!(kf, yk, zk, Pxy)
 
-    if length(archive.states) == 0
-        push!(archive.states, deepcopy(kf.estimate))
-    end
     push!(archive.states, deepcopy(kf.estimate))
     push!(archive.residuals, UncertainContinuousState(zk.x - yk.x, yk.P, zk.t))
     return nothing

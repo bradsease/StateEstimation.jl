@@ -17,7 +17,7 @@ export
     # Observers
     AbstractObserver, LinearObserver, NonlinearObserver, observable,
     # Data archiving
-    EstimatorHistory, plot_archive,
+    EstimatorHistory, plot_state_history, plot_residuals,
     # Kalman filters
     AbstractKalmanFilter, KalmanFilter, ExtendedKalmanFilter, simulate,
     process!, inaccurate_simulate,

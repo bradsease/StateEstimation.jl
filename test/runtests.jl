@@ -25,3 +25,6 @@ include("multi_target_filter_tests.jl")
 
 println("8. Testing LeastSquaresEstimator constructors and methods...")
 include("least_squares_tests.jl")
+
+println("9. Testing EstimatorHistory constructors and methods...")
+include("archive_tests.jl")
