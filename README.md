@@ -13,7 +13,7 @@ A collection of state estimators in Julia.
 
 To install, run the following command from the Julia REPL:
 ```julia
-julia> Pkg.clone("git@github.com:bradsease/StateEstimation.jl.git")
+julia> Pkg.clone("https://github.com/bradsease/StateEstimation.jl.git")
 ```
 
 
